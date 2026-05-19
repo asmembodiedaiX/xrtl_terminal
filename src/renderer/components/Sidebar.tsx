@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { ipcRenderer } from 'electron';
 import { useTerminalStore } from '../stores/terminalStore';
 import ContextMenu, { MenuItem } from './ContextMenu';
+import SSHConfigDialog, { SSHConfig } from './SSHConfigDialog';
+import { ToastContainer, Toast } from './Toast';
 
 interface Server {
   id: string;
@@ -9,20 +12,59 @@ interface Server {
   port: number;
   username: string;
   status: 'connected' | 'disconnected';
+  colorTag?: string;
+  environment?: string;
+  remarks?: string;
+  password?: string;
 }
-
-const servers: Server[] = [
-  { id: '1', name: '192.168.1.30-server', host: '192.168.1.30', port: 22, username: 'root', status: 'connected' },
-  { id: '2', name: '192.168.1.72', host: '192.168.1.72', port: 22, username: 'admin', status: 'disconnected' },
-  { id: '3', name: 'example.com', host: 'example.com', port: 22, username: 'user', status: 'disconnected' },
-  { id: '4', name: 'test-server.com', host: 'test-server.com', port: 22, username: 'ubuntu', status: 'disconnected' },
-];
 
 const Sidebar: React.FC = () => {
   const [activeView, setActiveView] = React.useState('servers');
   const [expanded, setExpanded] = React.useState(true);
   const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; server: Server | null } | null>(null);
+  const [showConfigDialog, setShowConfigDialog] = React.useState(false);
+  const [editingConfig, setEditingConfig] = React.useState<SSHConfig | null>(null);
+  const [toasts, setToasts] = React.useState<Toast[]>([]);
+  const [servers, setServers] = useState<Server[]>([]);
   const { addSession } = useTerminalStore();
+
+  useEffect(() => {
+    loadServers();
+  }, []);
+
+  const loadServers = async () => {
+    try {
+      const result = await ipcRenderer.invoke('load-all-ssh-configs');
+      if (result.success) {
+        const loadedServers: Server[] = result.configs.map((config: any) => ({
+          id: config.id,
+          name: config.name,
+          host: config.host,
+          port: config.port,
+          username: config.user,
+          status: 'disconnected' as const,
+          colorTag: config.colorTag,
+          environment: config.environment,
+          remarks: config.remarks,
+          password: config.password
+        }));
+        setServers(loadedServers);
+      } else {
+        showToast('加载配置失败: ' + result.error, 'error');
+      }
+    } catch (error: any) {
+      showToast('加载配置失败: ' + error.message, 'error');
+    }
+  };
+
+  const showToast = (message: string, type: Toast['type']) => {
+    const id = `toast-${Date.now()}`;
+    setToasts(prev => [...prev, { id, message, type, duration: 3000 }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   const handleConnect = (server: Server) => {
     addSession({
@@ -32,7 +74,8 @@ const Sidebar: React.FC = () => {
       sshConfig: {
         host: server.host,
         port: server.port,
-        username: server.username
+        username: server.username,
+        password: server.password
       }
     });
   };
@@ -46,26 +89,25 @@ const Sidebar: React.FC = () => {
     });
   };
 
-  const handleContextMenuClick = (action: string, server: Server) => {
+  const handleContextMenuClick = async (action: string, server: Server) => {
     switch (action) {
       case 'connect':
         handleConnect(server);
         break;
+      case 'new-connection':
+        setEditingConfig(null);
+        setShowConfigDialog(true);
+        break;
       case 'rename':
         const newName = prompt('请输入新名称:', server.name);
         if (newName) {
-          const index = servers.findIndex(s => s.id === server.id);
-          if (index !== -1) {
-            servers[index].name = newName;
-          }
+          const updatedServer = { ...server, name: newName };
+          await saveServer(updatedServer);
         }
         break;
       case 'delete':
         if (confirm(`确定要删除服务器 "${server.name}" 吗？`)) {
-          const index = servers.findIndex(s => s.id === server.id);
-          if (index !== -1) {
-            servers.splice(index, 1);
-          }
+          await deleteServer(server.id);
         }
         break;
       case 'duplicate':
@@ -75,23 +117,92 @@ const Sidebar: React.FC = () => {
           name: `${server.name} (副本)`,
           status: 'disconnected'
         };
-        servers.push(newServer);
+        await saveServer(newServer);
         break;
+      case 'edit':
+        setEditingConfig({
+          id: server.id,
+          name: server.name,
+          host: server.host,
+          user: server.username,
+          port: server.port,
+          authMethod: server.password ? 'password' : 'agent',
+          colorTag: server.colorTag || '#3498db',
+          environment: server.environment || '无',
+          remarks: server.remarks || '',
+          mfaEnabled: false,
+          password: server.password
+        });
+        setShowConfigDialog(true);
+        break;
+    }
+  };
+
+  const saveServer = async (server: Server) => {
+    try {
+      const config: SSHConfig = {
+        id: server.id,
+        name: server.name,
+        host: server.host,
+        user: server.username,
+        port: server.port,
+        authMethod: server.password ? 'password' : 'agent',
+        colorTag: server.colorTag || '#3498db',
+        environment: server.environment || '无',
+        remarks: server.remarks || '',
+        mfaEnabled: false,
+        password: server.password
+      };
+      const result = await ipcRenderer.invoke('save-ssh-config', config);
+      if (result.success) {
+        await loadServers();
+      } else {
+        showToast('保存失败: ' + result.error, 'error');
+      }
+    } catch (error: any) {
+      showToast('保存失败: ' + error.message, 'error');
+    }
+  };
+
+  const deleteServer = async (id: string) => {
+    try {
+      const result = await ipcRenderer.invoke('delete-ssh-config', id);
+      if (result.success) {
+        await loadServers();
+      } else {
+        showToast('删除失败: ' + result.error, 'error');
+      }
+    } catch (error: any) {
+      showToast('删除失败: ' + error.message, 'error');
+    }
+  };
+
+  const handleSaveConfig = async (config: SSHConfig) => {
+    try {
+      const result = await ipcRenderer.invoke('save-ssh-config', config);
+      if (result.success) {
+        showToast('配置已保存', 'success');
+        await loadServers();
+      } else {
+        showToast('保存失败: ' + result.error, 'error');
+      }
+    } catch (error: any) {
+      showToast('保存失败: ' + error.message, 'error');
     }
   };
 
   const getContextMenuItems = (server: Server): MenuItem[] => [
     {
-      id: 'new-folder',
-      label: '新建目录',
-      icon: '📁',
-      onClick: () => handleContextMenuClick('new-folder', server)
-    },
-    {
       id: 'new-connection',
       label: '新建连接',
       icon: '➕',
       onClick: () => handleContextMenuClick('new-connection', server)
+    },
+    {
+      id: 'new-folder',
+      label: '新建目录',
+      icon: '📁',
+      onClick: () => handleContextMenuClick('new-folder', server)
     },
     { id: 'divider1', divider: true },
     {
@@ -100,6 +211,12 @@ const Sidebar: React.FC = () => {
       icon: '🔌',
       disabled: server.status === 'connected',
       onClick: () => handleContextMenuClick('connect', server)
+    },
+    {
+      id: 'edit',
+      label: '编辑',
+      icon: '✏️',
+      onClick: () => handleContextMenuClick('edit', server)
     },
     {
       id: 'delete',
@@ -213,18 +330,38 @@ const Sidebar: React.FC = () => {
                 fontSize: 12
               }}>
                 <span>服务器列表</span>
-                <button
-                  onClick={() => setExpanded(!expanded)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#858585',
-                    cursor: 'pointer',
-                    fontSize: 14
-                  }}
-                >
-                  ▼
-                </button>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    onClick={() => {
+                      setEditingConfig(null);
+                      setShowConfigDialog(true);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#858585',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      padding: '2px 4px'
+                    }}
+                    title="新建连接"
+                  >
+                    ➕
+                  </button>
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#858585',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      padding: '2px 4px'
+                    }}
+                  >
+                    ▼
+                  </button>
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -250,7 +387,7 @@ const Sidebar: React.FC = () => {
                       width: 8,
                       height: 8,
                       borderRadius: '50%',
-                      backgroundColor: server.status === 'connected' ? '#6a9955' : '#666666'
+                      backgroundColor: server.colorTag || (server.status === 'connected' ? '#6a9955' : '#666666')
                     }} />
                     <div style={{ flex: 1 }}>
                       <div style={{ color: '#cccccc', fontSize: 13 }}>{server.name}</div>
@@ -292,6 +429,16 @@ const Sidebar: React.FC = () => {
           menuItems={contextMenu.server ? getContextMenuItems(contextMenu.server) : []}
         />
       )}
+
+      <SSHConfigDialog
+        isOpen={showConfigDialog}
+        onClose={() => setShowConfigDialog(false)}
+        onSave={handleSaveConfig}
+        onShowToast={showToast}
+        config={editingConfig}
+      />
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </>
   );
 };

@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
@@ -27,12 +28,16 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      'cpu-features': path.resolve(__dirname, 'src/utils/emptyModule.ts')
     }
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/renderer/index.html'
+    }),
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^cpu-features$/
     })
   ],
   devServer: {

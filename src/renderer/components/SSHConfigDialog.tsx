@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { sshService } from '../../services/sshService';
 
 interface SSHConfigDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (config: SSHConfig) => void;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   config?: SSHConfig | null;
 }
 
@@ -24,10 +26,11 @@ interface SSHConfig {
 
 const colorTags = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c', '#e91e63', '#607d8b'];
 
-const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSave, config }) => {
+const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSave, onShowToast, config }) => {
   const [activeTab, setActiveTab] = useState<'standard' | 'tunnel' | 'proxy' | 'env' | 'advanced'>('standard');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; host?: string }>({});
+  const [testing, setTesting] = useState(false);
 
   const [formData, setFormData] = useState<SSHConfig>({
     name: config?.name || '',
@@ -63,9 +66,39 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
       setErrors(newErrors);
       return;
     }
-    
+
     onSave(formData);
     onClose();
+  };
+
+  const handleTestConnection = async () => {
+    if (!formData.host.trim()) {
+      setErrors({ host: 'host is a required field' });
+      onShowToast('请填写主机地址', 'warning');
+      return;
+    }
+
+    setTesting(true);
+    onShowToast('正在测试连接...', 'info');
+
+    try {
+      const result = await sshService.testConnection({
+        host: formData.host,
+        port: formData.port,
+        username: formData.user,
+        password: formData.password
+      });
+
+      if (result.success) {
+        onShowToast('连接成功！', 'success');
+      } else {
+        onShowToast(result.message, 'error');
+      }
+    } catch (error: any) {
+      onShowToast(`测试连接失败: ${error.message}`, 'error');
+    } finally {
+      setTesting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -104,7 +137,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
           ))}
         </div>
 
-        <div style={contentStyle}>
+        <div style={contentStyle as any}>
           <div style={formGridStyle}>
             <div style={formGroupStyle}>
               <label style={labelStyle}>颜色标签</label>
@@ -269,13 +302,16 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                   onClick={() => setShowPassword(!showPassword)}
                   style={passwordToggleButtonStyle as any}
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    {showPassword ? (
-                      <path d="M14 14L8 8M8 8L2 2M8 8V14M8 8V2" stroke="#858585" strokeWidth="1.5"/>
-                    ) : (
-                      <path d="M14 14L8 8M8 8L2 2M8 8V14M8 8V2M14 2L8 8M8 8L2 14" stroke="#858585" strokeWidth="1.5"/>
-                    )}
-                  </svg>
+                  {showPassword ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#858585" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                      <path d="M2.05 12C3.42 7.94 7.22 5 12 5c4.78 0 8.58 2.94 9.95 7-1.37 4.06-5.17 7-9.95 7-4.78 0-8.58-2.94-9.95-7Z"/>
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#858585" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13.875 18.825A10.05 10.05 0 0 1 12 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 0 1 1.563-3.029m5.858.908a3 3 0 1 1 4.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0 1 12 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 0 1-4.132 5.411m0 0L21 21"/>
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>
@@ -294,7 +330,17 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
         </div>
 
         <div style={dialogFooterStyle}>
-          <button style={footerButtonStyle as any}>测试连接</button>
+          <button
+            onClick={handleTestConnection}
+            disabled={testing}
+            style={{
+              ...footerButtonStyle as any,
+              opacity: testing ? 0.6 : 1,
+              cursor: testing ? 'wait' : 'pointer'
+            }}
+          >
+            {testing ? '测试中...' : '测试连接'}
+          </button>
           <button onClick={validateAndSave} style={{ ...footerButtonStyle as any, color: '#007acc' }}>
             保存
           </button>
@@ -373,10 +419,27 @@ const tabButtonStyle: React.CSSProperties = {
   transition: 'all 0.15s'
 };
 
-const contentStyle: React.CSSProperties = {
+const contentStyle = {
   padding: 16,
   maxHeight: 400,
-  overflowY: 'auto'
+  overflowY: 'auto',
+  scrollbarWidth: 'thin',
+  scrollbarColor: '#4a4a4f #2d2d2d',
+  '::-webkit-scrollbar': {
+    width: 8,
+    height: 8
+  },
+  '::-webkit-scrollbar-track': {
+    background: '#2d2d2d',
+    borderRadius: 4
+  },
+  '::-webkit-scrollbar-thumb': {
+    background: '#4a4a4f',
+    borderRadius: 4,
+    '&:hover': {
+      background: '#5a5a5f'
+    }
+  }
 };
 
 const formGridStyle: React.CSSProperties = {

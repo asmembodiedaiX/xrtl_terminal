@@ -1,5 +1,6 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 
 const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
@@ -19,6 +20,9 @@ module.exports = {
           to: path.resolve(__dirname, 'build/resources')
         }
       ]
+    }),
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^cpu-features$/
     })
   ],
   module: {
@@ -33,11 +37,14 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.js'],
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      'cpu-features': path.resolve(__dirname, 'src/utils/emptyModule.ts')
     }
   },
   externals: {
-    sqlite3: 'commonjs sqlite3'
+    sqlite3: 'commonjs sqlite3',
+    ssh2: 'commonjs ssh2',
+    keytar: 'commonjs keytar'
   },
   node: {
     __dirname: false,
