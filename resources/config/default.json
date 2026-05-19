@@ -1,0 +1,14 @@
+{
+  "theme": "dark",
+  "fontSize": 14,
+  "fontFamily": "\"JetBrains Mono\", \"Fira Code\", Consolas, monospace",
+  "cursorBlink": true,
+  "scrollback": 10000,
+  "wordWrap": false,
+  "tabWidth": 8,
+  "bellSound": true,
+  "confirmOnClose": true,
+  "autoConnectLastSession": false,
+  "connectionTimeout": 10000,
+  "keepaliveInterval": 30000
+}

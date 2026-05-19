@@ -1,0 +1,16 @@
+{
+  "name": "theme-dark",
+  "version": "1.0.0",
+  "description": "Dark theme for XRTL Terminal",
+  "author": "XRTL Team",
+  "type": "theme",
+  "main": "extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "theme-dark.apply",
+        "title": "Apply Dark Theme"
+      }
+    ]
+  }
+}
