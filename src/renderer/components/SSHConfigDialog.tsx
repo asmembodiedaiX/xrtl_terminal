@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { sshService } from '../../services/sshService';
 
 interface SSHConfigDialogProps {
@@ -44,6 +44,40 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
     remarks: config?.remarks || '',
     mfaEnabled: config?.mfaEnabled || false
   });
+
+  // 当 config 变化或对话框打开时，更新表单数据
+  useEffect(() => {
+    if (isOpen && config) {
+      setFormData({
+        name: config.name || '',
+        host: config.host || '',
+        user: config.user || 'root',
+        port: config.port || 22,
+        password: config.password || '',
+        authMethod: config.authMethod || 'password',
+        colorTag: config.colorTag || colorTags[0],
+        environment: config.environment || '无',
+        remarks: config.remarks || '',
+        mfaEnabled: config.mfaEnabled || false
+      });
+      setErrors({});
+    } else if (isOpen && !config) {
+      // 新建时重置表单
+      setFormData({
+        name: '',
+        host: '',
+        user: 'root',
+        port: 22,
+        password: '',
+        authMethod: 'password',
+        colorTag: colorTags[0],
+        environment: '无',
+        remarks: '',
+        mfaEnabled: false
+      });
+      setErrors({});
+    }
+  }, [isOpen, config]);
 
   const handleInputChange = (field: keyof SSHConfig, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -110,7 +144,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
           <span style={titleStyle}>SSH配置编辑</span>
           <button onClick={onClose} style={closeButtonStyle as any}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M2 2L14 14M14 2L2 14" stroke="#858585" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M2 2L14 14M14 2L2 14" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
@@ -128,8 +162,8 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
               onClick={() => setActiveTab(tab.key)}
               style={{
                 ...tabButtonStyle,
-                backgroundColor: activeTab === tab.key ? '#3c3c3c' : 'transparent',
-                color: activeTab === tab.key ? '#ffffff' : '#858585'
+                backgroundColor: activeTab === tab.key ? 'var(--bg-tertiary)' : 'transparent',
+                color: activeTab === tab.key ? 'var(--accent-color)' : 'var(--text-secondary)'
               }}
             >
               {tab.label}
@@ -149,18 +183,18 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                     style={{
                       ...colorTagButtonStyle,
                       backgroundColor: color,
-                      borderColor: formData.colorTag === color ? '#007acc' : 'transparent'
+                      borderColor: formData.colorTag === color ? 'var(--accent-color)' : 'transparent'
                     }}
                   />
                 ))}
                 <button style={colorTagButtonStyle}>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 2v8M2 6h8" stroke="#6e6e76" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M6 2v8M2 6h8" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 </button>
                 <button style={colorTagButtonStyle}>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 2L10 10M10 2L2 10" stroke="#6e6e76" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M2 2L10 10M10 2L2 10" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 </button>
               </div>
@@ -188,7 +222,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 style={{
                   ...inputStyle,
-                  borderColor: errors.name ? '#e74c3c' : '#3c3c3c'
+                  borderColor: errors.name ? 'var(--danger-color)' : 'var(--border-color)'
                 } as any}
                 placeholder="输入连接名称"
               />
@@ -203,7 +237,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                 onChange={(e) => handleInputChange('host', e.target.value)}
                 style={{
                   ...inputStyle,
-                  borderColor: errors.host ? '#e74c3c' : '#3c3c3c'
+                  borderColor: errors.host ? 'var(--danger-color)' : 'var(--border-color)'
                 } as any}
                 placeholder="输入主机地址"
               />
@@ -236,7 +270,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                   onClick={() => handleInputChange('authMethod', 'password')}
                   style={{
                     ...authButtonStyle,
-                    backgroundColor: formData.authMethod === 'password' ? '#007acc' : '#3c3c3c'
+                    backgroundColor: formData.authMethod === 'password' ? 'var(--accent-color)' : 'var(--bg-tertiary)'
                   }}
                 >
                   密码
@@ -245,7 +279,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                   onClick={() => handleInputChange('authMethod', 'privateKey')}
                   style={{
                     ...authButtonStyle,
-                    backgroundColor: formData.authMethod === 'privateKey' ? '#007acc' : '#3c3c3c'
+                    backgroundColor: formData.authMethod === 'privateKey' ? 'var(--accent-color)' : 'var(--bg-tertiary)'
                   }}
                 >
                   私钥
@@ -254,7 +288,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                   onClick={() => handleInputChange('mfaEnabled', !formData.mfaEnabled)}
                   style={{
                     ...authButtonStyle,
-                    backgroundColor: formData.mfaEnabled ? '#007acc' : '#3c3c3c'
+                    backgroundColor: formData.mfaEnabled ? 'var(--accent-color)' : 'var(--bg-tertiary)'
                   }}
                 >
                   MFA/2FA
@@ -271,7 +305,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                   onClick={() => handleInputChange('authMethod', 'agent')}
                   style={{
                     ...authSubButtonStyle as any,
-                    backgroundColor: formData.authMethod === 'agent' ? '#007acc' : '#3c3c3c'
+                    backgroundColor: formData.authMethod === 'agent' ? 'var(--accent-color)' : 'var(--bg-tertiary)'
                   }}
                 >
                   SSH Agent
@@ -280,7 +314,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                   onClick={() => handleInputChange('authMethod', 'none')}
                   style={{
                     ...authSubButtonStyle as any,
-                    backgroundColor: formData.authMethod === 'none' ? '#007acc' : '#3c3c3c'
+                    backgroundColor: formData.authMethod === 'none' ? 'var(--accent-color)' : 'var(--bg-tertiary)'
                   }}
                 >
                   不验证
@@ -303,12 +337,12 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
                   style={passwordToggleButtonStyle as any}
                 >
                   {showPassword ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#858585" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
                       <path d="M2.05 12C3.42 7.94 7.22 5 12 5c4.78 0 8.58 2.94 9.95 7-1.37 4.06-5.17 7-9.95 7-4.78 0-8.58-2.94-9.95-7Z"/>
                     </svg>
                   ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#858585" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M13.875 18.825A10.05 10.05 0 0 1 12 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 0 1 1.563-3.029m5.858.908a3 3 0 1 1 4.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0 1 12 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 0 1-4.132 5.411m0 0L21 21"/>
                     </svg>
                   )}
@@ -341,7 +375,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
           >
             {testing ? '测试中...' : '测试连接'}
           </button>
-          <button onClick={validateAndSave} style={{ ...footerButtonStyle as any, color: '#007acc' }}>
+          <button onClick={validateAndSave} style={{ ...footerButtonStyle as any, color: 'var(--accent-color)' }}>
             保存
           </button>
         </div>
@@ -366,7 +400,7 @@ const dialogOverlayStyle: React.CSSProperties = {
 
 const dialogStyle: React.CSSProperties = {
   width: 600,
-  backgroundColor: '#1e1e1e',
+  backgroundColor: 'var(--bg-primary)',
   borderRadius: 8,
   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
   display: 'flex',
@@ -379,14 +413,14 @@ const dialogHeaderStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '16px',
-  borderBottom: '1px solid #3c3c3c',
-  backgroundColor: '#252526'
+  borderBottom: '1px solid var(--border-color)',
+  backgroundColor: 'var(--bg-secondary)'
 };
 
 const titleStyle: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
-  color: '#cccccc'
+  color: 'var(--text-primary)'
 };
 
 const closeButtonStyle = {
@@ -397,7 +431,7 @@ const closeButtonStyle = {
   borderRadius: 4,
   transition: 'background-color 0.15s',
   ':hover': {
-    backgroundColor: '#3c3c3c'
+    backgroundColor: 'var(--bg-tertiary)'
   }
 };
 
@@ -405,8 +439,8 @@ const tabBarStyle: React.CSSProperties = {
   display: 'flex',
   gap: 8,
   padding: '12px 16px',
-  borderBottom: '1px solid #3c3c3c',
-  backgroundColor: '#1e1e1e'
+  borderBottom: '1px solid var(--border-color)',
+  backgroundColor: 'var(--bg-primary)'
 };
 
 const tabButtonStyle: React.CSSProperties = {
@@ -424,20 +458,20 @@ const contentStyle = {
   maxHeight: 400,
   overflowY: 'auto',
   scrollbarWidth: 'thin',
-  scrollbarColor: '#4a4a4f #2d2d2d',
+  scrollbarColor: 'var(--border-color) var(--bg-tertiary)',
   '::-webkit-scrollbar': {
     width: 8,
     height: 8
   },
   '::-webkit-scrollbar-track': {
-    background: '#2d2d2d',
+    background: 'var(--bg-tertiary)',
     borderRadius: 4
   },
   '::-webkit-scrollbar-thumb': {
-    background: '#4a4a4f',
+    background: 'var(--border-color)',
     borderRadius: 4,
     '&:hover': {
-      background: '#5a5a5f'
+      background: 'var(--text-secondary)'
     }
   }
 };
@@ -463,7 +497,7 @@ const formGroupStyleFull: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
-  color: '#858585'
+  color: 'var(--text-secondary)'
 };
 
 const colorTagsContainerStyle: React.CSSProperties = {
@@ -485,35 +519,35 @@ const colorTagButtonStyle: React.CSSProperties = {
 
 const selectStyle = {
   padding: '8px 12px',
-  backgroundColor: '#2d2d2d',
-  border: '1px solid #3c3c3c',
+  backgroundColor: 'var(--bg-tertiary)',
+  border: '1px solid var(--border-color)',
   borderRadius: 4,
-  color: '#cccccc',
+  color: 'var(--text-primary)',
   fontSize: 13,
   cursor: 'pointer',
   outline: 'none',
   ':focus': {
-    borderColor: '#007acc'
+    borderColor: 'var(--accent-color)'
   }
 };
 
 const inputStyle = {
   padding: '8px 12px',
-  backgroundColor: '#2d2d2d',
-  border: '1px solid #3c3c3c',
+  backgroundColor: 'var(--bg-tertiary)',
+  border: '1px solid var(--border-color)',
   borderRadius: 4,
-  color: '#cccccc',
+  color: 'var(--text-primary)',
   fontSize: 13,
   outline: 'none',
   transition: 'border-color 0.15s',
   ':focus': {
-    borderColor: '#007acc'
+    borderColor: 'var(--accent-color)'
   }
 };
 
 const errorStyle: React.CSSProperties = {
   fontSize: 11,
-  color: '#e74c3c'
+  color: 'var(--danger-color)'
 };
 
 const authButtonsContainerStyle: React.CSSProperties = {
@@ -542,15 +576,15 @@ const authSubButtonsContainerStyle: React.CSSProperties = {
 const authSubButtonStyle = {
   flex: 1,
   padding: '4px 8px',
-  backgroundColor: '#3c3c3c',
+  backgroundColor: 'var(--bg-tertiary)',
   border: 'none',
   borderRadius: 3,
-  color: '#cccccc',
+  color: 'var(--text-primary)',
   fontSize: 11,
   cursor: 'pointer',
   transition: 'background-color 0.15s',
   ':hover': {
-    backgroundColor: '#4a4a4f'
+    backgroundColor: 'var(--border-color)'
   }
 };
 
@@ -562,24 +596,24 @@ const passwordInputContainerStyle: React.CSSProperties = {
 const passwordInputStyle = {
   flex: 1,
   padding: '8px 12px',
-  backgroundColor: '#2d2d2d',
-  border: '1px solid #3c3c3c',
+  backgroundColor: 'var(--bg-tertiary)',
+  border: '1px solid var(--border-color)',
   borderRadius: 4,
-  color: '#cccccc',
+  color: 'var(--text-primary)',
   fontSize: 13,
   outline: 'none',
   borderTopRightRadius: 0,
   borderBottomRightRadius: 0,
   transition: 'border-color 0.15s',
   ':focus': {
-    borderColor: '#007acc'
+    borderColor: 'var(--accent-color)'
   }
 };
 
 const passwordToggleButtonStyle = {
   padding: '8px 12px',
-  backgroundColor: '#2d2d2d',
-  border: '1px solid #3c3c3c',
+  backgroundColor: 'var(--bg-tertiary)',
+  border: '1px solid var(--border-color)',
   borderLeft: 'none',
   borderRadius: 4,
   borderTopLeftRadius: 0,
@@ -587,23 +621,23 @@ const passwordToggleButtonStyle = {
   cursor: 'pointer',
   transition: 'background-color 0.15s',
   ':hover': {
-    backgroundColor: '#3c3c3c'
+    backgroundColor: 'var(--border-color)'
   }
 };
 
 const textareaStyle = {
   padding: '8px 12px',
-  backgroundColor: '#2d2d2d',
-  border: '1px solid #3c3c3c',
+  backgroundColor: 'var(--bg-tertiary)',
+  border: '1px solid var(--border-color)',
   borderRadius: 4,
-  color: '#cccccc',
+  color: 'var(--text-primary)',
   fontSize: 13,
   outline: 'none',
   resize: 'vertical',
   fontFamily: 'inherit',
   transition: 'border-color 0.15s',
   ':focus': {
-    borderColor: '#007acc'
+    borderColor: 'var(--accent-color)'
   }
 };
 
@@ -612,8 +646,8 @@ const dialogFooterStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '12px 16px',
-  borderTop: '1px solid #3c3c3c',
-  backgroundColor: '#252526'
+  borderTop: '1px solid var(--border-color)',
+  backgroundColor: 'var(--bg-secondary)'
 };
 
 const footerButtonStyle = {
@@ -621,14 +655,14 @@ const footerButtonStyle = {
   backgroundColor: 'transparent',
   border: 'none',
   borderRadius: 4,
-  color: '#858585',
+  color: 'var(--text-secondary)',
   fontSize: 12,
   fontWeight: 500,
   cursor: 'pointer',
   transition: 'all 0.15s',
   ':hover': {
-    color: '#cccccc',
-    backgroundColor: '#3c3c3c'
+    color: 'var(--text-primary)',
+    backgroundColor: 'var(--bg-tertiary)'
   }
 };
 

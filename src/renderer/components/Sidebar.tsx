@@ -3,6 +3,8 @@ import { ipcRenderer } from 'electron';
 import { useTerminalStore } from '../stores/terminalStore';
 import ContextMenu, { MenuItem } from './ContextMenu';
 import SSHConfigDialog, { SSHConfig } from './SSHConfigDialog';
+import ConfirmDialog from './ConfirmDialog';
+import RenameDialog from './RenameDialog';
 import { ToastContainer, Toast } from './Toast';
 
 interface Server {
@@ -20,17 +22,44 @@ interface Server {
 
 const Sidebar: React.FC = () => {
   const [activeView, setActiveView] = React.useState('servers');
-  const [expanded, setExpanded] = React.useState(true);
   const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; server: Server | null } | null>(null);
   const [showConfigDialog, setShowConfigDialog] = React.useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+  const [showRenameDialog, setShowRenameDialog] = React.useState(false);
+  const [renameDialogData, setRenameDialogData] = React.useState<{
+    server: Server;
+  } | null>(null);
+  const [newServerName, setNewServerName] = React.useState('');
+  const [confirmDialogData, setConfirmDialogData] = React.useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  } | null>(null);
   const [editingConfig, setEditingConfig] = React.useState<SSHConfig | null>(null);
   const [toasts, setToasts] = React.useState<Toast[]>([]);
   const [servers, setServers] = useState<Server[]>([]);
-  const { addSession } = useTerminalStore();
+  const { addSession, sessions } = useTerminalStore();
 
   useEffect(() => {
     loadServers();
   }, []);
+
+  useEffect(() => {
+    // 同步服务器状态与终端会话状态
+    setServers(prevServers => 
+      prevServers.map(server => {
+        // 查找是否有同名的已连接会话
+        const connectedSession = sessions.find(
+          s => s.name === server.name && s.status === 'connected'
+        );
+        return {
+          ...server,
+          status: connectedSession ? 'connected' : 'disconnected'
+        };
+      })
+    );
+  }, [sessions]);
 
   const loadServers = async () => {
     try {
@@ -55,6 +84,46 @@ const Sidebar: React.FC = () => {
     } catch (error: any) {
       showToast('加载配置失败: ' + error.message, 'error');
     }
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, type: 'danger' | 'warning' | 'info' = 'warning') => {
+    setConfirmDialogData({ title, message, onConfirm, type });
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmDialogData?.onConfirm) {
+      confirmDialogData.onConfirm();
+    }
+    setShowConfirmDialog(false);
+    setConfirmDialogData(null);
+  };
+
+  const handleCancelConfirm = () => {
+    setShowConfirmDialog(false);
+    setConfirmDialogData(null);
+  };
+
+  const openRenameDialog = (server: Server) => {
+    setRenameDialogData({ server });
+    setNewServerName(server.name);
+    setShowRenameDialog(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (renameDialogData && newServerName.trim()) {
+      const updatedServer = { ...renameDialogData.server, name: newServerName.trim() };
+      await saveServer(updatedServer);
+    }
+    setShowRenameDialog(false);
+    setRenameDialogData(null);
+    setNewServerName('');
+  };
+
+  const handleRenameCancel = () => {
+    setShowRenameDialog(false);
+    setRenameDialogData(null);
+    setNewServerName('');
   };
 
   const showToast = (message: string, type: Toast['type']) => {
@@ -99,16 +168,17 @@ const Sidebar: React.FC = () => {
         setShowConfigDialog(true);
         break;
       case 'rename':
-        const newName = prompt('请输入新名称:', server.name);
-        if (newName) {
-          const updatedServer = { ...server, name: newName };
-          await saveServer(updatedServer);
-        }
+        openRenameDialog(server);
         break;
       case 'delete':
-        if (confirm(`确定要删除服务器 "${server.name}" 吗？`)) {
-          await deleteServer(server.id);
-        }
+        showConfirm(
+          '删除服务器',
+          `确定要删除服务器 "${server.name}" 吗？此操作不可撤销。`,
+          async () => {
+            await deleteServer(server.id);
+          },
+          'danger'
+        );
         break;
       case 'duplicate':
         const newServer: Server = {
@@ -198,12 +268,6 @@ const Sidebar: React.FC = () => {
       icon: '➕',
       onClick: () => handleContextMenuClick('new-connection', server)
     },
-    {
-      id: 'new-folder',
-      label: '新建目录',
-      icon: '📁',
-      onClick: () => handleContextMenuClick('new-folder', server)
-    },
     { id: 'divider1', divider: true },
     {
       id: 'connect',
@@ -235,39 +299,6 @@ const Sidebar: React.FC = () => {
       label: '复制',
       icon: '📋',
       onClick: () => handleContextMenuClick('duplicate', server)
-    },
-    { id: 'divider2', divider: true },
-    {
-      id: 'cut',
-      label: '剪切',
-      icon: '✂️',
-      onClick: () => handleContextMenuClick('cut', server)
-    },
-    {
-      id: 'paste',
-      label: '粘贴',
-      icon: '📥',
-      onClick: () => handleContextMenuClick('paste', server)
-    },
-    { id: 'divider3', divider: true },
-    {
-      id: 'refresh',
-      label: '刷新',
-      icon: '🔄',
-      onClick: () => handleContextMenuClick('refresh', server)
-    },
-    { id: 'divider4', divider: true },
-    {
-      id: 'import',
-      label: '导入',
-      icon: '📥',
-      onClick: () => handleContextMenuClick('import', server)
-    },
-    {
-      id: 'export',
-      label: '导出',
-      icon: '📤',
-      onClick: () => handleContextMenuClick('export', server)
     }
   ];
 
@@ -279,19 +310,31 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
+      <style>{`
+        @keyframes breathing {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.5;
+            transform: scale(0.85);
+          }
+        }
+      `}</style>
       <div style={{
-        width: expanded ? 220 : 48,
-        backgroundColor: '#252526',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'var(--bg-secondary)',
         display: 'flex',
         flexDirection: 'column',
-        borderRight: '1px solid #3c3c3c',
-        transition: 'width 0.2s'
+        borderRight: '1px solid var(--border-color)'
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           padding: '8px',
-          borderBottom: '1px solid #3c3c3c'
+          borderBottom: '1px solid var(--border-color)'
         }}>
           {menuItems.map((item) => (
             <button
@@ -302,8 +345,8 @@ const Sidebar: React.FC = () => {
                 height: 36,
                 borderRadius: 4,
                 border: 'none',
-                backgroundColor: activeView === item.id ? '#3c3c3c' : 'transparent',
-                color: activeView === item.id ? '#569cd6' : '#858585',
+                backgroundColor: activeView === item.id ? 'var(--bg-tertiary)' : 'transparent',
+                color: activeView === item.id ? 'var(--accent-color)' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -317,107 +360,74 @@ const Sidebar: React.FC = () => {
           ))}
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {expanded && (
-            <div style={{ padding: '8px' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 8,
-                padding: '4px 8px',
-                color: '#858585',
-                fontSize: 12
-              }}>
-                <span>服务器列表</span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button
-                    onClick={() => {
-                      setEditingConfig(null);
-                      setShowConfigDialog(true);
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#858585',
-                      cursor: 'pointer',
-                      fontSize: 14,
-                      padding: '2px 4px'
-                    }}
-                    title="新建连接"
-                  >
-                    ➕
-                  </button>
-                  <button
-                    onClick={() => setExpanded(!expanded)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#858585',
-                      cursor: 'pointer',
-                      fontSize: 14,
-                      padding: '2px 4px'
-                    }}
-                  >
-                    ▼
-                  </button>
-                </div>
-              </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 8,
+            padding: '4px 8px',
+            color: 'var(--text-secondary)',
+            fontSize: 12
+          }}>
+            <span>服务器列表</span>
+            <button
+              onClick={() => {
+                setEditingConfig(null);
+                setShowConfigDialog(true);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: 14,
+                padding: '2px 4px'
+              }}
+              title="新建连接"
+            >
+              ➕
+            </button>
+          </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {servers.map((server) => (
-                  <button
-                    key={server.id}
-                    onClick={() => handleConnect(server)}
-                    onContextMenu={(e) => handleContextMenu(e, server)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '8px',
-                      backgroundColor: server.status === 'connected' ? '#094771' : '#2d2d30',
-                      border: 'none',
-                      borderRadius: 4,
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      backgroundColor: server.colorTag || (server.status === 'connected' ? '#6a9955' : '#666666')
-                    }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: '#cccccc', fontSize: 13 }}>{server.name}</div>
-                      <div style={{ color: '#858585', fontSize: 11 }}>{server.username}@{server.host}:{server.port}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!expanded && (
-            <div style={{ padding: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {servers.map((server) => (
               <button
-                onClick={() => setExpanded(!expanded)}
+                key={server.id}
+                onDoubleClick={() => handleConnect(server)}
+                onContextMenu={(e) => handleContextMenu(e, server)}
                 style={{
-                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
                   padding: '8px',
-                  backgroundColor: '#2d2d30',
+                  backgroundColor: server.status === 'connected' ? 'var(--bg-tertiary)' : 'var(--bg-primary)',
                   border: 'none',
                   borderRadius: 4,
                   cursor: 'pointer',
-                  color: '#858585',
-                  fontSize: 12
+                  transition: 'background-color 0.2s',
+                  textAlign: 'left',
+                  width: '100%'
                 }}
               >
-                ► 展开
+                <div style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: server.status === 'connected' ? 'var(--success-color)' : (server.colorTag || 'var(--text-secondary)'),
+                  animation: server.status === 'connected' ? 'breathing 2s ease-in-out infinite' : 'none'
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {server.name}
+                  </div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {server.username}@{server.host}:{server.port}
+                  </div>
+                </div>
               </button>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </div>
 
@@ -439,6 +449,24 @@ const Sidebar: React.FC = () => {
       />
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        title={confirmDialogData?.title || ''}
+        message={confirmDialogData?.message || ''}
+        onConfirm={handleConfirm}
+        onCancel={handleCancelConfirm}
+        confirmText="删除"
+        cancelText="取消"
+        type={confirmDialogData?.type}
+      />
+
+      <RenameDialog
+        isOpen={showRenameDialog}
+        currentName={renameDialogData?.server.name || ''}
+        onConfirm={handleRenameConfirm}
+        onCancel={handleRenameCancel}
+      />
     </>
   );
 };

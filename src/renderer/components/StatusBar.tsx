@@ -15,11 +15,11 @@ const StatusBar: React.FC = () => {
   };
 
   const getStatusColor = () => {
-    if (!activeSession) return '#858585';
+    if (!activeSession) return 'var(--text-secondary)';
     switch (activeSession.status) {
-      case 'connected': return '#6a9955';
-      case 'connecting': return '#cca700';
-      default: return '#f14c4c';
+      case 'connected': return 'var(--success-color)';
+      case 'connecting': return 'var(--warning-color)';
+      default: return 'var(--danger-color)';
     }
   };
 
@@ -29,10 +29,11 @@ const StatusBar: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'space-between',
       height: 22,
-      backgroundColor: '#252526',
+      backgroundColor: 'var(--bg-secondary)',
       padding: '0 16px',
       fontSize: 12,
-      color: '#858585'
+      color: 'var(--text-secondary)',
+      borderTop: '1px solid var(--border-color)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

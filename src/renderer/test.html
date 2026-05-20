@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Page</title>
+  <style>
+    body { 
+      margin: 0; 
+      padding: 20px; 
+      background: #1e1e1e; 
+      color: #fff; 
+      font-family: sans-serif; 
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Page</h1>
+  <p>This is a test to check if the renderer process works.</p>
+  <script>
+    console.log('Renderer process is working!');
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM is ready');
+    });
+  </script>
+</body>
+</html>

@@ -1,18 +1,21 @@
-import { app, BrowserWindow, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, screen } from 'electron';
 import * as path from 'path';
 import { Client } from 'ssh2';
 import { saveSSHConfig, loadAllSSHConfigs, deleteSSHConfig } from './configStore';
 
 let mainWindow: BrowserWindow | null = null;
+const sshSessions: Map<string, { client: Client; stream: any }> = new Map();
 
 function createWindow() {
-  const iconPath = path.join(__dirname, '../../resources/icons/logo.png');
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: Math.floor(width * 0.8),
+    height: Math.floor(height * 0.8),
+    minWidth: 900,
+    minHeight: 600,
     title: 'XRTL Terminal',
-    icon: iconPath,
+    icon: path.join(__dirname, '../../resources/icons/logo.ico'),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#252526',
@@ -165,5 +168,74 @@ ipcMain.handle('delete-ssh-config', async (_event, id) => {
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
+  const conn = new Client();
+
+  return new Promise((resolve, reject) => {
+    conn.on('ready', () => {
+      conn.shell({ cols: 80, rows: 24 }, (err, stream) => {
+        if (err) {
+          conn.end();
+          reject(err);
+          return;
+        }
+
+        sshSessions.set(sessionId, { client: conn, stream });
+        resolve({ success: true });
+
+        stream.on('data', (data: Buffer) => {
+          if (mainWindow) {
+            mainWindow.webContents.send(`ssh-data-${sessionId}`, data.toString('utf8'));
+          }
+        });
+
+        stream.on('close', () => {
+          conn.end();
+          sshSessions.delete(sessionId);
+          if (mainWindow) {
+            mainWindow.webContents.send(`ssh-close-${sessionId}`);
+          }
+        });
+      });
+    });
+
+    conn.on('error', (err) => {
+      reject(err);
+    });
+
+    conn.connect({
+      host: config.host,
+      port: config.port || 22,
+      username: config.username,
+      password: config.password
+    });
+  });
+});
+
+ipcMain.on('ssh-send-data', (_event, { sessionId, data }) => {
+  const session = sshSessions.get(sessionId);
+  if (session && session.stream) {
+    session.stream.write(data);
+  }
+});
+
+ipcMain.on('ssh-resize', (_event, { sessionId, cols, rows }) => {
+  const session = sshSessions.get(sessionId);
+  if (session && session.stream) {
+    session.stream.setWindow(rows, cols, 0, 0);
+  }
+});
+
+ipcMain.on('ssh-disconnect', (_event, { sessionId }) => {
+  const session = sshSessions.get(sessionId);
+  if (session) {
+    if (session.stream) {
+      session.stream.end();
+    }
+    session.client.end();
+    sshSessions.delete(sessionId);
   }
 });

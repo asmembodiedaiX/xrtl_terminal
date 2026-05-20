@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ThemeSwitcher from './ThemeSwitcher';
 
 const Header: React.FC = () => {
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
@@ -6,7 +7,7 @@ const Header: React.FC = () => {
   const iconStyle = {
     background: 'none' as const,
     border: 'none' as const,
-    color: '#858585' as const,
+    color: 'var(--text-secondary)' as const,
     cursor: 'pointer' as const,
     fontSize: 16 as const,
     padding: '4px 8px' as const,
@@ -24,12 +25,12 @@ const Header: React.FC = () => {
     let bgColor = customBg || 'transparent';
 
     if (isHovered && !customBg) {
-      bgColor = '#3c3c3c';
+      bgColor = 'var(--bg-tertiary)';
     }
 
     return {
       ...iconStyle,
-      color: customColor || '#858585',
+      color: customColor || 'var(--text-secondary)',
       backgroundColor: bgColor
     };
   };
@@ -39,10 +40,10 @@ const Header: React.FC = () => {
     alignItems: 'center',
     justifyContent: 'space-between',
     height: 32,
-    backgroundColor: '#252526',
-    borderBottom: '1px solid #3c3c3c',
+    backgroundColor: 'var(--bg-secondary)',
+    borderBottom: '1px solid var(--border-color)',
     padding: '0 8px',
-    WebkitAppRegion: 'drag',
+    WebkitAppRegion: 'drag' as 'drag',
     cursor: 'default'
   };
 
@@ -50,18 +51,22 @@ const Header: React.FC = () => {
     display: 'flex',
     alignItems: 'center',
     gap: 0,
-    WebkitAppRegion: 'no-drag'
+    WebkitAppRegion: 'no-drag' as 'no-drag'
   };
 
   return (
     <div style={headerStyle}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: '#569cd6', fontSize: 14, fontWeight: 600 }}>XRTL Terminal</span>
+        <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 'bold' }}>XRTL Terminal</span>
       </div>
 
       <div style={buttonsStyle}>
+        <ThemeSwitcher />
+
+        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 8px' }} />
+
         <button
-          style={getButtonStyle('search', '#4ec9b0')}
+          style={getButtonStyle('search', 'var(--accent-color)')}
           title="搜索 (Ctrl+Shift+F)"
           onMouseEnter={() => setHoveredBtn('search')}
           onMouseLeave={() => setHoveredBtn(null)}
@@ -73,16 +78,16 @@ const Header: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          backgroundColor: '#007acc',
+          backgroundColor: 'var(--accent-color)',
           padding: '2px 8px',
           borderRadius: 4,
           marginLeft: 4
         }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>⊕</span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: '#fff' }}>Plus</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#ffffff' }}>⊕</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: '#ffffff' }}>Plus</span>
         </div>
 
-        <div style={{ width: 1, height: 16, backgroundColor: '#3c3c3c', margin: '0 4px' }} />
+        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
 
         <button
           style={getButtonStyle('git')}
@@ -111,7 +116,7 @@ const Header: React.FC = () => {
           ≡
         </button>
 
-        <div style={{ width: 1, height: 16, backgroundColor: '#3c3c3c', margin: '0 4px' }} />
+        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
 
         <button
           style={getButtonStyle('view')}
@@ -122,7 +127,7 @@ const Header: React.FC = () => {
           :
         </button>
 
-        <div style={{ width: 1, height: 16, backgroundColor: '#3c3c3c', margin: '0 4px' }} />
+        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
 
         <button
           style={getButtonStyle('new')}

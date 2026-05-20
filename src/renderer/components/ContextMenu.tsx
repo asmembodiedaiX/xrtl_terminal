@@ -56,8 +56,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, menuItems }) =
         position: 'fixed',
         left: x,
         top: y,
-        backgroundColor: '#2d2d30',
-        border: '1px solid #3c3c3c',
+        backgroundColor: 'var(--bg-secondary)',
+        border: '1px solid var(--border-color)',
         borderRadius: 4,
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
         padding: 4,
@@ -72,7 +72,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, menuItems }) =
               key={item.id}
               style={{
                 height: 1,
-                backgroundColor: '#3c3c3c',
+                backgroundColor: 'var(--border-color)',
                 margin: '4px 0',
               }}
             />
@@ -99,7 +99,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, menuItems }) =
               border: 'none',
               borderRadius: 2,
               cursor: item.disabled ? 'not-allowed' : 'pointer',
-              color: item.disabled ? '#666666' : '#cccccc',
+              color: item.disabled ? 'var(--text-secondary)' : 'var(--text-primary)',
               fontSize: 12,
               textAlign: 'left',
               transition: 'background-color 0.15s',
@@ -107,7 +107,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, menuItems }) =
             }}
             onMouseEnter={(e) => {
               if (!item.disabled) {
-                e.currentTarget.style.backgroundColor = '#3c3c3c';
+                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
               }
             }}
             onMouseLeave={(e) => {
@@ -119,7 +119,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, menuItems }) =
               {item.label}
             </span>
             {item.shortcut && (
-              <span style={{ color: '#858585', fontSize: 11 }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
                 {item.shortcut}
               </span>
             )}
