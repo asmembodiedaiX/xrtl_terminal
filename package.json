@@ -71,7 +71,6 @@
   },
   "dependencies": {
     "ansi-parser": "^3.2.1",
-    "electron": "^30.0.0",
     "keytar": "^7.9.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
@@ -95,6 +94,7 @@
     "concurrently": "^8.0.0",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^6.0.0",
+    "electron": "^30.0.0",
     "electron-builder": "^24.0.0",
     "eslint": "^8.0.0",
     "eslint-plugin-react": "^7.32.0",
