@@ -249,7 +249,12 @@ const Sidebar: React.FC = () => {
 
   const handleSaveConfig = async (config: SSHConfig) => {
     try {
-      const result = await ipcRenderer.invoke('save-ssh-config', config);
+      // 如果是新建连接，生成唯一 ID
+      const configWithId = config.id ? config : {
+        ...config,
+        id: `server-${Date.now()}`
+      };
+      const result = await ipcRenderer.invoke('save-ssh-config', configWithId);
       if (result.success) {
         showToast('配置已保存', 'success');
         await loadServers();
