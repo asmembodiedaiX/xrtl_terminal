@@ -1,4 +1,4 @@
-import { Terminal } from 'xterm';
+import { Terminal } from '@xterm/xterm';
 import { SSHConfig, TerminalSession, SFTPFile } from '../../common/types';
 
 export interface ITerminalAPI {

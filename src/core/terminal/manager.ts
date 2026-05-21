@@ -1,5 +1,5 @@
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
 import { SSHClient } from '../ssh/client';
 import { SSHConfig } from '../../common/types';
 

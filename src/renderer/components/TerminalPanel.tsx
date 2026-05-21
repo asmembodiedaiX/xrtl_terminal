@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import { WebLinksAddon } from 'xterm-addon-web-links';
-import 'xterm/css/xterm.css';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { WebLinksAddon } from '@xterm/addon-web-links';
+import '@xterm/xterm/css/xterm.css';
 import { ipcRenderer } from 'electron';
 import { useTerminalStore, TerminalSession } from '../stores/terminalStore';
 
@@ -55,7 +55,7 @@ const TerminalPanel: React.FC = () => {
     terminalInstancesRef.current.set(session.id, { terminal, fitAddon });
 
     // Handle terminal input
-    terminal.onData((data) => {
+    terminal.onData((data: string) => {
       ipcRenderer.send('ssh-send-data', { sessionId: session.id, data });
     });
 
@@ -88,6 +88,28 @@ const TerminalPanel: React.FC = () => {
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
+
+    // Handle text selection - auto copy when selection changes
+    terminal.onSelectionChange(() => {
+      const selection = terminal.getSelection();
+      if (selection && selection.trim()) {
+        navigator.clipboard.writeText(selection.trim()).catch(err => {
+          console.error('Failed to copy to clipboard:', err);
+        });
+      }
+    });
+
+    // Handle right-click paste
+    container.addEventListener('contextmenu', (e: MouseEvent) => {
+      e.preventDefault();
+      navigator.clipboard.readText().then(text => {
+        if (text) {
+          ipcRenderer.send('ssh-send-data', { sessionId: session.id, data: text });
+        }
+      }).catch(err => {
+        console.error('Failed to read from clipboard:', err);
+      });
+    });
 
     // Connect to SSH if it's an SSH session and not already connected
     if (session.type === 'ssh' && session.status !== 'connected' && session.sshConfig) {

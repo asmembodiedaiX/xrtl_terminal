@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout code
@@ -20,11 +20,6 @@ jobs:
       with:
         node-version: '20.x'
         cache: 'npm'
-
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y wine64
 
     - name: Install npm dependencies
       run: npm install
@@ -45,7 +40,6 @@ jobs:
         path: |
           dist/*.exe
           dist/*.zip
-          dist/*.nsis-installer.exe
 
   release:
     needs: build
@@ -65,5 +59,4 @@ jobs:
         files: |
           dist/*.exe
           dist/*.zip
-          dist/*.nsis-installer.exe
         generate_release_notes: true
