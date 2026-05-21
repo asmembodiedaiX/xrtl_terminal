@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, screen, clipboard } from 'electron';
 import * as path from 'path';
 import { Client } from 'ssh2';
 import { saveSSHConfig, loadAllSSHConfigs, deleteSSHConfig } from './configStore';
@@ -218,7 +218,10 @@ ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
 ipcMain.on('ssh-send-data', (_event, { sessionId, data }) => {
   const session = sshSessions.get(sessionId);
   if (session && session.stream) {
-    session.stream.write(data);
+    // Ensure data is a string and handle multi-line input properly
+    const inputData = typeof data === 'string' ? data : String(data);
+    // Write all data to the stream, including newlines for multi-line paste
+    session.stream.write(inputData);
   }
 });
 
@@ -238,4 +241,9 @@ ipcMain.on('ssh-disconnect', (_event, { sessionId }) => {
     session.client.end();
     sshSessions.delete(sessionId);
   }
+});
+
+// Clipboard API for renderer process
+ipcMain.handle('get-clipboard-text', () => {
+  return clipboard.readText();
 });

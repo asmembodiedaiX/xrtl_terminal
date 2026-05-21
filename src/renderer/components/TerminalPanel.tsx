@@ -102,9 +102,12 @@ const TerminalPanel: React.FC = () => {
     // Handle right-click paste
     container.addEventListener('contextmenu', (e: MouseEvent) => {
       e.preventDefault();
-      navigator.clipboard.readText().then(text => {
-        if (text) {
-          ipcRenderer.send('ssh-send-data', { sessionId: session.id, data: text });
+      // Use Electron's clipboard API for better multi-line support
+      ipcRenderer.invoke('get-clipboard-text').then((text: string) => {
+        if (text && text.trim()) {
+          // Convert Windows line endings to Unix line endings
+          const normalizedText = text.replace(/\r\n/g, '\n');
+          ipcRenderer.send('ssh-send-data', { sessionId: session.id, data: normalizedText });
         }
       }).catch(err => {
         console.error('Failed to read from clipboard:', err);
