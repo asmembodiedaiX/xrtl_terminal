@@ -30,6 +30,7 @@
     "directories": {
       "output": "dist"
     },
+    "publish": "never",
     "files": [
       "build/**/*",
       "node_modules/**/*",
