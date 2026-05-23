@@ -60,7 +60,8 @@
           ]
         }
       ],
-      "icon": "resources/icons/logo.png"
+      "icon": "resources/icons/logo.png",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
