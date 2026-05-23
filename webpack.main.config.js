@@ -1,6 +1,7 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
+const TerserPlugin = require('terser-webpack-plugin');
 
 const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
@@ -11,6 +12,19 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'build/main'),
     filename: 'index.js'
+  },
+  optimization: {
+    minimize: mode === 'production',
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            drop_debugger: true
+          }
+        }
+      })
+    ]
   },
   plugins: [
     new CopyPlugin({
@@ -23,6 +37,9 @@ module.exports = {
     }),
     new webpack.IgnorePlugin({
       resourceRegExp: /^cpu-features$/
+    }),
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(mode)
     })
   ],
   module: {

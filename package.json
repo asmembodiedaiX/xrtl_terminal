@@ -28,10 +28,12 @@
     "appId": "com.xrtl.terminal",
     "productName": "XRTL Terminal",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "resources"
     },
     "publish": null,
     "files": [
+      "package.json",
       "build/**/*",
       "node_modules/**/*",
       "resources/**/*"
@@ -46,6 +48,9 @@
         "to": "icons"
       }
     ],
+    "asar": true,
+    "asarUnpack": "**\\*.{node,dll}",
+    "compression": "maximum",
     "win": {
       "target": [
         {
@@ -106,6 +111,7 @@
     "pngjs": "^7.0.0",
     "sharp": "^0.34.5",
     "style-loader": "^4.0.0",
+    "terser-webpack-plugin": "^5.6.0",
     "ts-jest": "^29.1.4",
     "ts-loader": "^9.5.1",
     "typescript": "^5.4.5",

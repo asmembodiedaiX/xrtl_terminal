@@ -1,11 +1,15 @@
 import { app, BrowserWindow, Menu, ipcMain, screen, clipboard, dialog } from 'electron';
 import * as path from 'path';
-import * as fs from 'fs';
-import { Client, SFTPWrapper } from 'ssh2';
-import { saveSSHConfig, loadAllSSHConfigs, deleteSSHConfig } from './configStore';
 
 let mainWindow: BrowserWindow | null = null;
-const sshSessions: Map<string, { client: Client; stream: any; sftp?: SFTPWrapper }> = new Map();
+const sshSessions: Map<string, { client: any; stream: any; sftp?: any }> = new Map();
+
+function getIconPath(): string {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'icons', 'logo.ico');
+  }
+  return path.join(__dirname, '../../resources/icons/logo.ico');
+}
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -16,7 +20,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'XRTL Terminal',
-    icon: path.join(__dirname, '../../resources/icons/logo.ico'),
+    icon: getIconPath(),
     titleBarStyle: 'hidden',
     frame: false,
     backgroundColor: '#1e1e1e',
@@ -25,60 +29,49 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      devTools: false,
+      devTools: !app.isPackaged,
       backgroundThrottling: false
     }
   });
 
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:3000').catch(err => {
-      console.error('Failed to load URL:', err);
-    });
+  const isPackaged = app.isPackaged;
 
-    // 监听加载失败
-    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-      console.error('Load failed:', errorCode, errorDescription);
-    });
+  let rendererPath: string;
+
+  if (!isPackaged) {
+    rendererPath = 'http://localhost:3000';
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html')).catch(err => {
-      console.error('Failed to load file:', err);
-    });
+    rendererPath = path.join(__dirname, '..', 'renderer', 'index.html');
   }
 
-  // 等待内容准备好后再显示窗口，防止白色残影
-  mainWindow.once('ready-to-show', () => {
-    // 确保窗口不是最大化状态
-    if (mainWindow?.isMaximized()) {
-      mainWindow.unmaximize();
-    }
-    // 再延迟一小段时间确保完全渲染
-    setTimeout(() => {
-      mainWindow?.show();
-    }, 100);
-  });
+  if (!isPackaged) {
+    mainWindow.loadURL(rendererPath);
+  } else {
+    mainWindow.loadFile(rendererPath);
+  }
 
-  // 添加超时机制，确保窗口一定会显示
-  setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
-      // 确保窗口不是最大化状态
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-      }
-      mainWindow.show();
-    }
-  }, 3000);
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 
-  // 禁用 devtools 打开
-  mainWindow.webContents.on('devtools-opened', () => {
-    mainWindow?.webContents.closeDevTools();
-  });
+  if (isPackaged) {
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow?.webContents.closeDevTools();
+    });
+  }
 }
 
-app.on('ready', () => {
+// 优化启动性能
+app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('force-gpu-rasterization');
+app.commandLine.appendSwitch('enable-features', 'VaapiVideoDecoder');
+
+app.whenReady().then(() => {
   createWindow();
   Menu.setApplicationMenu(null);
 });
@@ -124,6 +117,7 @@ ipcMain.on('window-close', () => {
 });
 
 ipcMain.on('ssh-test-connection', (event, { config, channel }) => {
+  const { Client } = require('ssh2');
   const conn = new Client();
   let replied = false;
 
@@ -145,7 +139,7 @@ ipcMain.on('ssh-test-connection', (event, { config, channel }) => {
     reply({ success: true, message: '连接成功' });
   });
 
-  conn.on('error', (err) => {
+  conn.on('error', (err: any) => {
     clearTimeout(timeout);
     conn.end();
     let errorMessage = '连接失败';
@@ -184,6 +178,7 @@ ipcMain.on('ssh-test-connection', (event, { config, channel }) => {
 });
 
 ipcMain.handle('save-ssh-config', async (_event, config) => {
+  const { saveSSHConfig } = require('./configStore');
   try {
     await saveSSHConfig(config);
     return { success: true };
@@ -193,6 +188,7 @@ ipcMain.handle('save-ssh-config', async (_event, config) => {
 });
 
 ipcMain.handle('load-all-ssh-configs', async () => {
+  const { loadAllSSHConfigs } = require('./configStore');
   try {
     const configs = await loadAllSSHConfigs();
     return { success: true, configs };
@@ -202,6 +198,7 @@ ipcMain.handle('load-all-ssh-configs', async () => {
 });
 
 ipcMain.handle('delete-ssh-config', async (_event, id) => {
+  const { deleteSSHConfig } = require('./configStore');
   try {
     await deleteSSHConfig(id);
     return { success: true };
@@ -211,12 +208,13 @@ ipcMain.handle('delete-ssh-config', async (_event, id) => {
 });
 
 ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
+  const { Client } = require('ssh2');
   const conn = new Client();
 
   return new Promise((resolve, reject) => {
     conn.on('ready', () => {
-      // Use a larger default size to ensure proper line wrapping
-      conn.shell({ cols: 120, rows: 40 }, (err, stream) => {
+      // Use a large default size that will be updated by resize later
+      conn.shell({ cols: 200, rows: 100 }, (err: any, stream: any) => {
         if (err) {
           conn.end();
           reject(err);
@@ -224,13 +222,22 @@ ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
         }
 
         // Create SFTP session for file operations
-        conn.sftp((sftpErr, sftp) => {
+        conn.sftp((sftpErr: any, sftp: any) => {
           if (sftpErr) {
             console.warn('SFTP connection failed:', sftpErr);
           }
 
           sshSessions.set(sessionId, { client: conn, stream, sftp: sftpErr ? undefined : sftp });
           resolve({ success: true });
+
+          setTimeout(() => {
+            const init = [
+              "export TERM=xterm-256color",
+              "export PS1='\\[\\e[32m\\][\\u@\\h\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[32m\\]]\\[\\e[0m\\]# '",
+              "printf '\\033[4A\\033[J'",
+            ].join('; ');
+            stream.write('\r' + init + '\r');
+          }, 0);
         });
 
         stream.on('data', (data: Buffer) => {
@@ -249,7 +256,7 @@ ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
       });
     });
 
-    conn.on('error', (err) => {
+    conn.on('error', (err: any) => {
       reject(err);
     });
 
@@ -287,15 +294,15 @@ ipcMain.handle('sftp-list-dir', async (_event, { sessionId, remotePath }) => {
   const targetPath = remotePath === '~' ? '.' : remotePath;
 
   return new Promise((resolve) => {
-    session.sftp!.readdir(targetPath, (err, list) => {
+    session.sftp!.readdir(targetPath, (err: any, list: any) => {
       if (err) {
         // If . also fails, try absolute root /
         if (targetPath === '.' || targetPath === '~') {
-          session.sftp!.readdir('/', (err2, list2) => {
+          session.sftp!.readdir('/', (err2: any, list2: any) => {
             if (err2) {
               resolve({ success: false, error: err2.message });
             } else {
-              const files = list2?.map(item => ({
+              const files = list2?.map((item: any) => ({
                 name: item.filename,
                 type: item.longname.startsWith('d') ? 'directory' : 'file',
                 size: item.attrs.size,
@@ -308,7 +315,7 @@ ipcMain.handle('sftp-list-dir', async (_event, { sessionId, remotePath }) => {
           resolve({ success: false, error: err.message });
         }
       } else {
-        const files = list?.map(item => ({
+        const files = list?.map((item: any) => ({
           name: item.filename,
           type: item.longname.startsWith('d') ? 'directory' : 'file',
           size: item.attrs.size,
@@ -329,7 +336,7 @@ ipcMain.handle('sftp-download-file', async (event, { sessionId, remotePath, loca
   let fileSize = 0;
 
   return new Promise((resolve) => {
-    session.sftp!.stat(remotePath, (err, stats) => {
+    session.sftp!.stat(remotePath, (err: any, stats: any) => {
       if (err) {
         resolve({ success: false, error: err.message });
         return;
@@ -353,7 +360,7 @@ ipcMain.handle('sftp-download-file', async (event, { sessionId, remotePath, loca
         options.start = resumePosition;
       }
 
-      session.sftp!.fastGet(remotePath, localPath, options, (err) => {
+      session.sftp!.fastGet(remotePath, localPath, options, (err: any) => {
         if (err) {
           resolve({ success: false, error: err.message });
         } else {
@@ -396,7 +403,7 @@ ipcMain.handle('sftp-upload-file', async (event, { sessionId, localPath, remoteP
       options.start = resumePosition;
     }
 
-    session.sftp!.fastPut(localPath, remotePath, options, (err) => {
+    session.sftp!.fastPut(localPath, remotePath, options, (err: any) => {
       if (err) {
         resolve({ success: false, error: err.message });
       } else {
@@ -418,7 +425,7 @@ ipcMain.handle('sftp-delete-file', async (_event, { sessionId, remotePath }) => 
   }
 
   return new Promise((resolve) => {
-    session.sftp!.unlink(remotePath, (err) => {
+    session.sftp!.unlink(remotePath, (err: any) => {
       if (err) {
         resolve({ success: false, error: err.message });
       } else {
@@ -435,12 +442,13 @@ ipcMain.handle('sftp-create-dir', async (_event, { sessionId, remotePath }) => {
   }
 
   return new Promise((resolve) => {
-    session.sftp!.mkdir(remotePath, (err) => {
+    session.sftp!.mkdir(remotePath, (err: any) => {
       if (err) {
         resolve({ success: false, error: err.message });
       } else {
         resolve({ success: true });
       }
+
     });
   });
 });
@@ -510,7 +518,7 @@ ipcMain.handle('ssh-get-cwd', async (_event, { sessionId }) => {
   }
 
   return new Promise((resolve) => {
-    session.client.exec('pwd', (err, channel) => {
+    session.client.exec('pwd', (err: any, channel: any) => {
       if (err) {
         resolve({ success: false, error: err.message });
         return;

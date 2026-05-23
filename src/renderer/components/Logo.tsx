@@ -3,7 +3,7 @@ import React from 'react';
 const Logo: React.FC<{ size?: number }> = ({ size = 16 }) => {
   return (
     <img
-      src="../icons/logo.png"
+      src="icons/logo.png"
       alt="XRTL"
       style={{
         width: size,

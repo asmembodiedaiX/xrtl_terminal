@@ -2,6 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
 const mode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
@@ -12,6 +13,19 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'build/renderer'),
     filename: 'index.js'
+  },
+  optimization: {
+    minimize: mode === 'production',
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            drop_debugger: true
+          }
+        }
+      })
+    ]
   },
   module: {
     rules: [
@@ -65,6 +79,9 @@ module.exports = {
           to: 'icons'
         }
       ]
+    }),
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(mode)
     })
   ],
   devServer: {
