@@ -28,9 +28,13 @@ jobs:
       run: npm run build
 
     - name: Package for Windows (portable exe)
+      env:
+        GH_TOKEN: "dummy-token"
       run: npm run dist -- --windows portable
 
     - name: Package for Windows (installer)
+      env:
+        GH_TOKEN: "dummy-token"
       run: npm run dist -- --windows nsis
 
     - name: Upload artifacts
