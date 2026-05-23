@@ -66,9 +66,9 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "resources/icons/logo.png",
-      "uninstallerIcon": "resources/icons/logo.png",
-      "installerHeaderIcon": "resources/icons/logo.png",
+      "installerIcon": "resources/icons/logo.ico",
+      "uninstallerIcon": "resources/icons/logo.ico",
+      "installerHeaderIcon": "resources/icons/logo.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "XRTL Terminal"
