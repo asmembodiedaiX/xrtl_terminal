@@ -6,6 +6,7 @@ export interface TerminalSession {
   status: 'connected' | 'disconnected' | 'connecting';
   type: 'local' | 'ssh';
   sshConfig?: SSHConfig;
+  currentPath?: string;
 }
 
 export interface SSHConfig {
@@ -24,6 +25,9 @@ interface TerminalStore {
   setActiveSession: (id: string) => void;
   updateSessionStatus: (id: string, status: TerminalSession['status']) => void;
   updateSessionName: (id: string, name: string) => void;
+  updateSessionPath: (id: string, path: string) => void;
+  reorderSessions: (fromIndex: number, toIndex: number) => void;
+  setSessions: (sessions: TerminalSession[]) => void;
 }
 
 export const useTerminalStore = create<TerminalStore>((set) => ({
@@ -65,7 +69,25 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
     sessions: state.sessions.map(s =>
       s.id === id ? { ...s, name } : s
     )
-  }))
+  })),
+
+  updateSessionPath: (id, path) => set((state) => {
+    console.log('[terminalStore] updateSessionPath:', id, path);
+    return {
+      sessions: state.sessions.map(s =>
+        s.id === id ? { ...s, currentPath: path } : s
+      )
+    };
+  }),
+
+  reorderSessions: (fromIndex, toIndex) => set((state) => {
+    const newSessions = [...state.sessions];
+    const [removed] = newSessions.splice(fromIndex, 1);
+    newSessions.splice(toIndex, 0, removed);
+    return { sessions: newSessions };
+  }),
+
+  setSessions: (sessions) => set({ sessions })
 }));
 
 export const TerminalProvider = ({ children }: { children: React.ReactNode }) => {

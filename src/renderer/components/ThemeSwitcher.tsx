@@ -28,7 +28,7 @@ const ThemeSwitcher: React.FC = () => {
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative' }}>
+    <div ref={dropdownRef} style={{ position: 'relative', zIndex: 100 }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -36,21 +36,21 @@ const ThemeSwitcher: React.FC = () => {
           alignItems: 'center',
           gap: 6,
           padding: '4px 8px',
-          background: 'none',
+          background: 'var(--bg-tertiary)',
           border: '1px solid var(--border-color)',
           borderRadius: 4,
           color: 'var(--text-primary)',
           cursor: 'pointer',
-          fontSize: 12
+          fontSize: 12,
+          minWidth: 80
         }}
         title="切换主题"
       >
         <span style={{
-          width: 16,
-          height: 16,
+          width: 12,
+          height: 12,
           borderRadius: '50%',
-          backgroundColor: currentTheme.colors.accent,
-          border: '2px solid var(--border-color)'
+          backgroundColor: currentTheme.colors.accent
         }} />
         <span>{currentTheme.name}</span>
       </button>
@@ -65,7 +65,7 @@ const ThemeSwitcher: React.FC = () => {
           border: '1px solid var(--border-color)',
           borderRadius: 6,
           padding: 4,
-          minWidth: 120,
+          minWidth: 140,
           zIndex: 1000,
           boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
         }}>
@@ -77,11 +77,11 @@ const ThemeSwitcher: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '8px 12px',
+                padding: '6px 12px',
                 cursor: 'pointer',
                 borderRadius: 4,
-                backgroundColor: themeName === name ? 'var(--bg-tertiary)' : 'transparent',
-                color: 'var(--text-primary)'
+                backgroundColor: themeName === name ? 'var(--accent-color)' : 'transparent',
+                color: themeName === name ? '#ffffff' : 'var(--text-primary)'
               }}
               onMouseEnter={(e) => {
                 if (themeName !== name) {
@@ -95,15 +95,14 @@ const ThemeSwitcher: React.FC = () => {
               }}
             >
               <span style={{
-                width: 18,
-                height: 18,
+                width: 14,
+                height: 14,
                 borderRadius: '50%',
-                backgroundColor: theme.colors.accent,
-                border: '2px solid var(--border-color)'
+                backgroundColor: theme.colors.accent
               }} />
-              <span style={{ fontSize: 13 }}>{theme.name}</span>
+              <span style={{ fontSize: 12 }}>{theme.name}</span>
               {themeName === name && (
-                <span style={{ marginLeft: 'auto', color: 'var(--success-color)' }}>✓</span>
+                <span style={{ marginLeft: 'auto' }}>✓</span>
               )}
             </div>
           ))}

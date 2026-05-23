@@ -1,40 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { ipcRenderer } from 'electron';
+import Logo from './Logo';
 import ThemeSwitcher from './ThemeSwitcher';
 
 const Header: React.FC = () => {
-  const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
-
-  const iconStyle = {
-    background: 'none' as const,
-    border: 'none' as const,
-    color: 'var(--text-secondary)' as const,
-    cursor: 'pointer' as const,
-    fontSize: 16 as const,
-    padding: '4px 8px' as const,
-    borderRadius: 4 as const,
-    display: 'flex' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    width: 24 as const,
-    height: 24 as const,
-    transition: 'background-color 0.1s' as const
-  };
-
-  const getButtonStyle = (btnId: string, customColor?: string, customBg?: string) => {
-    const isHovered = hoveredBtn === btnId;
-    let bgColor = customBg || 'transparent';
-
-    if (isHovered && !customBg) {
-      bgColor = 'var(--bg-tertiary)';
-    }
-
-    return {
-      ...iconStyle,
-      color: customColor || 'var(--text-secondary)',
-      backgroundColor: bgColor
-    };
-  };
-
   const headerStyle: any = {
     display: 'flex',
     alignItems: 'center',
@@ -42,110 +11,88 @@ const Header: React.FC = () => {
     height: 32,
     backgroundColor: 'var(--bg-secondary)',
     borderBottom: '1px solid var(--border-color)',
-    padding: '0 8px',
-    WebkitAppRegion: 'drag' as 'drag',
-    cursor: 'default'
+    padding: '0 4px',
+    WebkitAppRegion: 'drag',
+    cursor: 'default',
+    zIndex: 1000,
+    position: 'relative'
   };
 
-  const buttonsStyle: any = {
+  const windowControlStyle: any = {
+    WebkitAppRegion: 'no-drag',
     display: 'flex',
     alignItems: 'center',
-    gap: 0,
-    WebkitAppRegion: 'no-drag' as 'no-drag'
+    gap: 0
+  };
+
+  const controlButtonStyle = {
+    width: 46,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: 'none',
+    background: 'none',
+    cursor: 'pointer',
+    color: 'var(--text-secondary)',
+    fontSize: 12,
+    transition: 'background-color 0.1s'
+  };
+
+  const handleMinimize = () => {
+    ipcRenderer.send('window-minimize');
+  };
+
+  const handleMaximize = () => {
+    ipcRenderer.send('window-maximize');
+  };
+
+  const handleClose = () => {
+    ipcRenderer.send('window-close');
   };
 
   return (
     <div style={headerStyle}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Logo size={16} />
         <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 'bold' }}>XRTL Terminal</span>
       </div>
 
-      <div style={buttonsStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, WebkitAppRegion: 'no-drag' } as any}>
         <ThemeSwitcher />
 
-        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 8px' }} />
-
-        <button
-          style={getButtonStyle('search', 'var(--accent-color)')}
-          title="搜索 (Ctrl+Shift+F)"
-          onMouseEnter={() => setHoveredBtn('search')}
-          onMouseLeave={() => setHoveredBtn(null)}
-        >
-          🔍
-        </button>
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          backgroundColor: 'var(--accent-color)',
-          padding: '2px 8px',
-          borderRadius: 4,
-          marginLeft: 4
-        }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#ffffff' }}>⊕</span>
-          <span style={{ fontSize: 11, fontWeight: 500, color: '#ffffff' }}>Plus</span>
+        <div style={windowControlStyle}>
+          <button
+            style={controlButtonStyle}
+            onClick={handleMinimize}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            title="最小化"
+          >
+            −
+          </button>
+          <button
+            style={controlButtonStyle}
+            onClick={handleMaximize}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            title="最大化"
+          >
+            □
+          </button>
+          <button
+            style={{
+              ...controlButtonStyle,
+              color: '#ffffff'
+            }}
+            onClick={handleClose}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e81123'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            title="关闭"
+          >
+            ×
+          </button>
         </div>
-
-        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
-
-        <button
-          style={getButtonStyle('git')}
-          title="源代码管理"
-          onMouseEnter={() => setHoveredBtn('git')}
-          onMouseLeave={() => setHoveredBtn(null)}
-        >
-          ⑂
-        </button>
-
-        <button
-          style={getButtonStyle('run')}
-          title="运行和调试 (Ctrl+Shift+D)"
-          onMouseEnter={() => setHoveredBtn('run')}
-          onMouseLeave={() => setHoveredBtn(null)}
-        >
-          ▷
-        </button>
-
-        <button
-          style={getButtonStyle('ext')}
-          title="扩展 (Ctrl+Shift+X)"
-          onMouseEnter={() => setHoveredBtn('ext')}
-          onMouseLeave={() => setHoveredBtn(null)}
-        >
-          ≡
-        </button>
-
-        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
-
-        <button
-          style={getButtonStyle('view')}
-          title="打开视图"
-          onMouseEnter={() => setHoveredBtn('view')}
-          onMouseLeave={() => setHoveredBtn(null)}
-        >
-          :
-        </button>
-
-        <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-color)', margin: '0 4px' }} />
-
-        <button
-          style={getButtonStyle('new')}
-          title="新建终端"
-          onMouseEnter={() => setHoveredBtn('new')}
-          onMouseLeave={() => setHoveredBtn(null)}
-        >
-          +
-        </button>
-
-        <button
-          style={getButtonStyle('menu')}
-          title="窗口控制"
-          onMouseEnter={() => setHoveredBtn('menu')}
-          onMouseLeave={() => setHoveredBtn(null)}
-        >
-          ⋮
-        </button>
       </div>
     </div>
   );

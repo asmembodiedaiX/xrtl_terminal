@@ -401,11 +401,17 @@ const Sidebar: React.FC = () => {
                 key={server.id}
                 onDoubleClick={() => handleConnect(server)}
                 onContextMenu={(e) => handleContextMenu(e, server)}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-tertiary)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = server.status === 'connected' ? 'var(--bg-tertiary)' : 'var(--bg-primary)';
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '8px',
+                  padding: '10px 8px',
                   backgroundColor: server.status === 'connected' ? 'var(--bg-tertiary)' : 'var(--bg-primary)',
                   border: 'none',
                   borderRadius: 4,
@@ -423,7 +429,7 @@ const Sidebar: React.FC = () => {
                   animation: server.status === 'connected' ? 'breathing 2s ease-in-out infinite' : 'none'
                 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: 'var(--text-primary)', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ color: 'var(--text-primary)', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 4 }}>
                     {server.name}
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

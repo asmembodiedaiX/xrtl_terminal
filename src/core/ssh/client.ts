@@ -48,6 +48,16 @@ export class SSHClient extends EventEmitter {
         });
       });
 
+      this.client.on('timeout', () => {
+        this.isConnectedFlag = false;
+        this.emit('status', {
+          sessionId: config.id,
+          status: 'error' as const,
+          error: '连接超时'
+        });
+        reject(new Error('连接超时'));
+      });
+
       const connectConfig: ConnectConfig = {
         host: config.host,
         port: config.port,
@@ -56,7 +66,8 @@ export class SSHClient extends EventEmitter {
         privateKey: config.privateKey,
         passphrase: config.passphrase,
         readyTimeout: config.connectTimeout || 10000,
-        keepaliveInterval: config.keepaliveInterval || 30000
+        keepaliveInterval: 2000,
+        keepaliveCountMax: 2
       };
 
       this.emit('status', {

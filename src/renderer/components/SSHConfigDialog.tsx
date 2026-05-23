@@ -33,6 +33,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
   const [testing, setTesting] = useState(false);
 
   const [formData, setFormData] = useState<SSHConfig>({
+    id: config?.id || '',
     name: config?.name || '',
     host: config?.host || '',
     user: config?.user || 'root',
@@ -49,6 +50,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
   useEffect(() => {
     if (isOpen && config) {
       setFormData({
+        id: config.id || '',
         name: config.name || '',
         host: config.host || '',
         user: config.user || 'root',
@@ -64,6 +66,7 @@ const SSHConfigDialog: React.FC<SSHConfigDialogProps> = ({ isOpen, onClose, onSa
     } else if (isOpen && !config) {
       // 新建时重置表单
       setFormData({
+        id: '',
         name: '',
         host: '',
         user: 'root',
