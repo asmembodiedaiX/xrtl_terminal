@@ -1,6 +1,10 @@
 import { app, BrowserWindow, Menu, ipcMain, screen, clipboard, dialog } from 'electron';
 import * as path from 'path';
 
+// 必须在所有 Electron 代码之前设置，否则 Windows 任务栏显示 "Electron"
+app.setName('XRTL Terminal');
+app.setAppUserModelId('com.xrtl.terminal');
+
 let mainWindow: BrowserWindow | null = null;
 const sshSessions: Map<string, { client: any; stream: any; sftp?: any }> = new Map();
 
@@ -39,7 +43,7 @@ function createWindow() {
   let rendererPath: string;
 
   if (!isPackaged) {
-    rendererPath = 'http://localhost:3000';
+    rendererPath = 'http://localhost:3100';
   } else {
     rendererPath = path.join(__dirname, '..', 'renderer', 'index.html');
   }
