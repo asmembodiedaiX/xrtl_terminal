@@ -3,8 +3,10 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import TerminalPanel from './TerminalPanel';
 import StatusBar from './StatusBar';
+import { useTheme } from '../styles/ThemeContext';
 
 const MainLayout: React.FC = () => {
+  const { currentTheme } = useTheme();
   const [sidebarWidth, setSidebarWidth] = useState(280);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,10 +52,32 @@ const MainLayout: React.FC = () => {
       flexDirection: 'column',
       height: '100vh',
       backgroundColor: 'var(--bg-primary)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      position: 'relative'
     }}>
-      <Header />
-      <div ref={containerRef} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      {/* Background image layer */}
+      {currentTheme.background?.image && (
+        <div 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: `url(${currentTheme.background.image})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            filter: `blur(${currentTheme.background.blur || 0}px) brightness(${currentTheme.background.brightness || 1})`,
+            opacity: currentTheme.background.opacity || 0.5,
+            zIndex: 0
+          }}
+        />
+      )}
+      {/* Content layer */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Header />
+        <div ref={containerRef} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ width: sidebarWidth, minWidth: 180, maxWidth: 500 }}>
           <Sidebar />
         </div>
@@ -94,6 +118,7 @@ const MainLayout: React.FC = () => {
           <TerminalPanel />
           <StatusBar />
         </div>
+      </div>
       </div>
     </div>
   );

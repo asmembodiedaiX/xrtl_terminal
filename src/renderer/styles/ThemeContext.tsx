@@ -35,6 +35,38 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     document.documentElement.style.setProperty('--success-color', theme.colors.success);
     document.documentElement.style.setProperty('--warning-color', theme.colors.warning);
     document.documentElement.style.setProperty('--danger-color', theme.colors.danger);
+    // Terminal colors
+    document.documentElement.style.setProperty('--terminal-bg', theme.colors.terminalBg);
+    document.documentElement.style.setProperty('--terminal-fg', theme.colors.terminalFg);
+    document.documentElement.style.setProperty('--terminal-cursor', theme.colors.terminalCursor);
+    document.documentElement.style.setProperty('--terminal-cursor-accent', theme.colors.terminalCursorAccent);
+    document.documentElement.style.setProperty('--terminal-black', theme.colors.terminalBlack);
+    document.documentElement.style.setProperty('--terminal-red', theme.colors.terminalRed);
+    document.documentElement.style.setProperty('--terminal-green', theme.colors.terminalGreen);
+    document.documentElement.style.setProperty('--terminal-yellow', theme.colors.terminalYellow);
+    document.documentElement.style.setProperty('--terminal-blue', theme.colors.terminalBlue);
+    document.documentElement.style.setProperty('--terminal-magenta', theme.colors.terminalMagenta);
+    document.documentElement.style.setProperty('--terminal-cyan', theme.colors.terminalCyan);
+    document.documentElement.style.setProperty('--terminal-white', theme.colors.terminalWhite);
+    document.documentElement.style.setProperty('--terminal-bright-black', theme.colors.terminalBrightBlack);
+    document.documentElement.style.setProperty('--terminal-bright-red', theme.colors.terminalBrightRed);
+    document.documentElement.style.setProperty('--terminal-bright-green', theme.colors.terminalBrightGreen);
+    document.documentElement.style.setProperty('--terminal-bright-yellow', theme.colors.terminalBrightYellow);
+    document.documentElement.style.setProperty('--terminal-bright-blue', theme.colors.terminalBrightBlue);
+    document.documentElement.style.setProperty('--terminal-bright-magenta', theme.colors.terminalBrightMagenta);
+    document.documentElement.style.setProperty('--terminal-bright-cyan', theme.colors.terminalBrightCyan);
+    document.documentElement.style.setProperty('--terminal-bright-white', theme.colors.terminalBrightWhite);
+    
+    // Background image settings
+    if (theme.background?.image) {
+      document.documentElement.style.setProperty('--bg-image', `url(${theme.background.image})`);
+      document.documentElement.style.setProperty('--bg-blur', theme.background.blur ? `${theme.background.blur}px` : '0px');
+      document.documentElement.style.setProperty('--bg-opacity', theme.background.opacity ? `${theme.background.opacity}` : '0.5');
+      document.documentElement.style.setProperty('--bg-brightness', theme.background.brightness ? `${theme.background.brightness}` : '1');
+      document.documentElement.style.setProperty('--bg-image-enabled', 'true');
+    } else {
+      document.documentElement.style.setProperty('--bg-image-enabled', 'false');
+    }
   }, [themeName, isInitialized]);
 
   const setTheme = (name: string) => {

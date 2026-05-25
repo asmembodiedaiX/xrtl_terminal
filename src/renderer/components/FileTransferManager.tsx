@@ -90,8 +90,8 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
   }) => {
     const buttonStyle = {
       padding: '4px 8px',
-      backgroundColor: '#3c3c3c',
-      color: '#d4d4d4',
+      backgroundColor: 'var(--border-color)',
+      color: 'var(--text-primary)',
       border: 'none',
       borderRadius: '4px',
       cursor: 'pointer',
@@ -104,7 +104,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
         display: 'grid',
         gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
         padding: '12px 16px',
-        borderBottom: '1px solid #2a2d2e',
+        borderBottom: '1px solid var(--border-color)',
         alignItems: 'center'
       }}>
         <div>
@@ -118,7 +118,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
               {task.type === 'upload' ? '↑' : '↓'}
             </span>
             <span style={{
-              color: '#d4d4d4',
+              color: 'var(--text-primary)',
               fontSize: '13px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -130,7 +130,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
           <div style={{
             width: '100%',
             height: '4px',
-            backgroundColor: '#3c3c3c',
+            backgroundColor: 'var(--border-color)',
             borderRadius: '2px',
             overflow: 'hidden',
             marginTop: '6px'
@@ -139,14 +139,14 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
               <div style={{
                 height: '100%',
                 width: `${task.progress}%`,
-                backgroundColor: task.status === 'paused' ? '#cca700' : '#0e639c',
+                backgroundColor: task.status === 'paused' ? 'var(--warning-color)' : 'var(--accent-color)',
                 transition: 'width 0.3s ease-out'
               }} />
             )}
           </div>
         </div>
         <div style={{
-          color: '#858585',
+          color: 'var(--text-secondary)',
           fontSize: '12px',
           overflow: 'hidden',
           textOverflow: 'ellipsis'
@@ -154,10 +154,10 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
           {task.sessionId.slice(0, 8)}...
         </div>
         <div style={{
-          color: task.status === 'transferring' ? '#0e639c' :
-                 task.status === 'paused' ? '#cca700' :
-                 task.status === 'completed' ? '#3e8e3e' :
-                 task.status === 'failed' ? '#f14c4c' : '#858585',
+          color: task.status === 'transferring' ? 'var(--accent-color)' :
+                 task.status === 'paused' ? 'var(--warning-color)' :
+                 task.status === 'completed' ? 'var(--success-color)' :
+                 task.status === 'failed' ? 'var(--danger-color)' : 'var(--text-secondary)',
           fontSize: '12px'
         }}>
           {task.status === 'pending' ? '等待中' :
@@ -166,7 +166,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
            task.status === 'completed' ? '已完成' : '失败'}
         </div>
         <div style={{
-          color: '#858585',
+          color: 'var(--text-secondary)',
           fontSize: '12px'
         }}>
           {task.status === 'transferring' && (
@@ -175,7 +175,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
               <span style={{ margin: '0 4px' }}>/</span>
               <span>{formatFileSize(task.size)}</span>
               <br />
-              <span style={{ color: '#0e639c' }}>{formatSpeed(task.speed)}</span>
+              <span style={{ color: 'var(--accent-color)' }}>{formatSpeed(task.speed)}</span>
             </div>
           )}
           {task.status === 'completed' && (
@@ -186,7 +186,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
             </div>
           )}
           {task.status === 'failed' && task.error && (
-            <div style={{ color: '#f14c4c', fontSize: '11px' }}>
+            <div style={{ color: 'var(--danger-color)', fontSize: '11px' }}>
               {task.error}
             </div>
           )}
@@ -196,7 +196,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
               <span style={{ margin: '0 4px' }}>/</span>
               {formatFileSize(task.size)}
               <br />
-              <span style={{ color: '#cca700' }}>已暂停</span>
+              <span style={{ color: 'var(--warning-color)' }}>已暂停</span>
             </div>
           )}
           {task.status === 'pending' && (
@@ -219,7 +219,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
             )}
             {task.status !== 'transferring' && (
               <button
-                style={{ ...buttonStyle, backgroundColor: '#f14c4c' }}
+                style={{ ...buttonStyle, backgroundColor: 'var(--danger-color)' }}
                 onClick={() => onDelete(task.id)}
                 title="删除"
               >
@@ -295,8 +295,8 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
         top: position.y,
         width: '800px',
         height: '520px',
-        backgroundColor: '#1e1e1e',
-        border: '1px solid #3c3c3c',
+        backgroundColor: 'var(--bg-primary)',
+        border: '1px solid var(--border-color)',
         borderRadius: '8px',
         display: 'flex',
         flexDirection: 'column',
@@ -311,8 +311,8 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '12px 16px',
-          borderBottom: '1px solid #3c3c3c',
-          backgroundColor: '#252526',
+          borderBottom: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-secondary)',
           cursor: isDragging ? 'grabbing' : 'grab'
         }}
         onMouseDown={handleMouseDown}
@@ -324,7 +324,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
         }}>
           <span style={{ fontSize: '18px' }}>📤</span>
           <span style={{
-            color: '#d4d4d4',
+            color: 'var(--text-primary)',
             fontSize: '14px',
             fontWeight: 'bold'
           }}>文件传输</span>
@@ -334,18 +334,18 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
           style={{
             background: 'none',
             border: 'none',
-            color: '#858585',
+            color: 'var(--text-secondary)',
             fontSize: '20px',
             cursor: 'pointer',
             padding: '4px 8px',
             borderRadius: '4px'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#d4d4d4';
-            e.currentTarget.style.backgroundColor = '#3c3c3c';
+            e.currentTarget.style.color = 'var(--text-primary)';
+            e.currentTarget.style.backgroundColor = 'var(--border-color)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#858585';
+            e.currentTarget.style.color = 'var(--text-secondary)';
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
@@ -355,8 +355,8 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
 
       <div style={{
         display: 'flex',
-        borderBottom: '1px solid #3c3c3c',
-        backgroundColor: '#252526'
+        borderBottom: '1px solid var(--border-color)',
+        backgroundColor: 'var(--bg-secondary)'
       }}>
         {(['active', 'queue', 'paused', 'failed', 'completed'] as TabType[]).map((tab) => {
           const tabLabels = {
@@ -384,10 +384,10 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
                 padding: '10px 20px',
                 background: 'none',
                 border: 'none',
-                color: activeTab === tab ? '#0e639c' : '#858585',
+                color: activeTab === tab ? 'var(--accent-color)' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontSize: '13px',
-                borderBottom: activeTab === tab ? '2px solid #0e639c' : '2px solid transparent',
+                borderBottom: activeTab === tab ? '2px solid var(--accent-color)' : '2px solid transparent',
                 marginBottom: '-1px',
                 display: 'flex',
                 alignItems: 'center',
@@ -397,7 +397,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
               {tabLabels[tab]}
               {count > 0 && (
                 <span style={{
-                  backgroundColor: activeTab === tab ? '#0e639c' : '#3c3c3c',
+                  backgroundColor: activeTab === tab ? 'var(--accent-color)' : 'var(--border-color)',
                   color: '#fff',
                   fontSize: '11px',
                   padding: '2px 6px',
@@ -421,9 +421,9 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
           display: 'grid',
           gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
           padding: '10px 16px',
-          borderBottom: '1px solid #3c3c3c',
-          backgroundColor: '#252526',
-          color: '#858585',
+          borderBottom: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-secondary)',
+          color: 'var(--text-secondary)',
           fontSize: '12px',
           fontWeight: 'bold'
         }}>
@@ -441,7 +441,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#858585',
+            color: 'var(--text-secondary)',
             padding: '40px'
           }}>
             <div style={{ fontSize: '60px', marginBottom: '16px' }}>
@@ -466,7 +466,7 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
 
       <style>{`
         .file-item-hover:hover {
-          background-color: #2a2d2e !important;
+          background-color: var(--bg-hover) !important;
         }
 
         .file-browser-scrollbar::-webkit-scrollbar {
@@ -474,16 +474,16 @@ const FileTransferManager: React.FC<FileTransferManagerProps> = ({
         }
 
         .file-browser-scrollbar::-webkit-scrollbar-track {
-          background: #1e1e1e;
+          background: var(--bg-primary);
         }
 
         .file-browser-scrollbar::-webkit-scrollbar-thumb {
-          background: #3c3c3c;
+          background: var(--border-color);
           border-radius: 5px;
         }
 
         .file-browser-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #4c4c4c;
+          background: var(--bg-hover);
         }
       `}</style>
     </div>

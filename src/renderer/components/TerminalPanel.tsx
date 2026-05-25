@@ -7,15 +7,21 @@ import { ipcRenderer } from 'electron';
 import { useTerminalStore, TerminalSession } from '../stores/terminalStore';
 import FileBrowser from './FileBrowser';
 import FileTransferManager from './FileTransferManager';
+import { useTheme } from '../styles/ThemeContext';
 
 const TerminalPanel: React.FC = () => {
-  const { sessions, activeSessionId, removeSession, setActiveSession, updateSessionStatus, updateSessionPath } = useTerminalStore();
+  const { sessions, activeSessionId, removeSession, setActiveSession, updateSessionStatus, updateSessionPath, reorderSessions } = useTerminalStore();
+  const { currentTheme } = useTheme();
   const terminalContainersRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const terminalInstancesRef = useRef<Map<string, { terminal: Terminal; fitAddon: FitAddon }>>(new Map());
   const lastKnownPathRef = useRef<Map<string, string>>(new Map());
   const enterPressCountRef = useRef<Map<string, number>>(new Map());
   const enterPressTimerRef = useRef<Map<string, number>>(new Map());
   const sessionsRef = useRef(sessions);
+  
+  // 拖拽排序相关状态
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   
   // Keep sessionsRef updated with latest sessions
   useEffect(() => {
@@ -26,6 +32,53 @@ const TerminalPanel: React.FC = () => {
   const [transferTasks, setTransferTasks] = useState<any[]>([]);
   const [showTransferManager, setShowTransferManager] = useState(false);
   const [showFileBrowser, setShowFileBrowser] = useState(true);
+
+  // 从当前主题获取终端颜色配置
+  const getTerminalThemeFromContext = () => {
+    const colors = currentTheme.colors;
+    return {
+      background: 'rgba(0, 0, 0, 0.3)',  // 强制透明，显示背景图片
+      foreground: colors.terminalFg,
+      cursor: colors.terminalCursor,
+      cursorAccent: colors.terminalCursorAccent,
+      black: colors.terminalBlack,
+      red: colors.terminalRed,
+      green: colors.terminalGreen,
+      yellow: colors.terminalYellow,
+      blue: colors.terminalBlue,
+      magenta: colors.terminalMagenta,
+      cyan: colors.terminalCyan,
+      white: colors.terminalWhite,
+      brightBlack: colors.terminalBrightBlack,
+      brightRed: colors.terminalBrightRed,
+      brightGreen: colors.terminalBrightGreen,
+      brightYellow: colors.terminalBrightYellow,
+      brightBlue: colors.terminalBrightBlue,
+      brightMagenta: colors.terminalBrightMagenta,
+      brightCyan: colors.terminalBrightCyan,
+      brightWhite: colors.terminalBrightWhite
+    };
+  };
+
+  // 更新所有终端的主题颜色
+  const updateAllTerminalThemes = () => {
+    const newTheme = getTerminalThemeFromContext();
+    terminalInstancesRef.current.forEach(({ terminal, fitAddon }) => {
+      // 直接修改主题选项
+      terminal.options.theme = { ...newTheme };
+      // 触发重绘：通过调用 fit() 来强制刷新终端显示
+      try {
+        fitAddon.fit();
+      } catch (e) {
+        console.warn('Failed to refresh terminal:', e);
+      }
+    });
+  };
+
+  // 监听主题变化，实时更新终端颜色
+  useEffect(() => {
+    updateAllTerminalThemes();
+  }, [currentTheme]);
 
   const addTransferTask = (task: any) => {
     setTransferTasks(prev => [...prev, task]);
@@ -48,32 +101,14 @@ const TerminalPanel: React.FC = () => {
       return;
     }
 
+    // 获取当前主题的终端颜色
+    const terminalTheme = getTerminalThemeFromContext();
+
     const terminal = new Terminal({
       cursorBlink: true,
       fontSize: fontSize,
       fontFamily: '"JetBrains Mono Bold", "JetBrains Mono", "Fira Code", Consolas, monospace',
-      theme: {
-        background: '#1e1e1e',
-        foreground: '#d4d4d4',
-        cursor: '#aeafad',
-        cursorAccent: '#000000',
-        black: '#000000',
-        red: '#f14c4c',
-        green: '#6a9955',
-        yellow: '#dcdcaa',
-        blue: '#569cd6',
-        magenta: '#c586c0',
-        cyan: '#4ec9b0',
-        white: '#d4d4d4',
-        brightBlack: '#666666',
-        brightRed: '#f14c4c',
-        brightGreen: '#6a9955',
-        brightYellow: '#dcdcaa',
-        brightBlue: '#569cd6',
-        brightMagenta: '#c586c0',
-        brightCyan: '#4ec9b0',
-        brightWhite: '#ffffff'
-      }
+      theme: terminalTheme
     });
 
     const fitAddon = new FitAddon();
@@ -346,9 +381,9 @@ const TerminalPanel: React.FC = () => {
           font-style: normal;
         }
 
-        /* 防止窗口大小变化时 xterm 内部元素露出默认白色背景 */
+        /* 透明背景，显示底层背景图片 */
         .xterm, .xterm .xterm-screen, .xterm .xterm-viewport, .xterm canvas {
-          background-color: #1e1e1e !important;
+          background-color: transparent !important;
         }
         .xterm-viewport::-webkit-scrollbar {
           width: 10px;
@@ -380,18 +415,46 @@ const TerminalPanel: React.FC = () => {
         justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex' }}>
-          {sessions.map(session => (
+          {sessions.map((session, index) => (
             <div
               key={session.id}
               onClick={() => setActiveSession(session.id)}
+              draggable
+              onDragStart={(e) => {
+                setDraggedIndex(index);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverIndex(index);
+              }}
+              onDragLeave={() => {
+                setDragOverIndex(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (draggedIndex !== null && draggedIndex !== index) {
+                  reorderSessions(draggedIndex, index);
+                }
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
+              onDragEnd={() => {
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 padding: '6px 12px',
                 backgroundColor: activeSessionId === session.id ? 'var(--bg-primary)' : 'var(--bg-tertiary)',
                 borderRight: '1px solid var(--border-color)',
-                cursor: 'pointer',
-                maxWidth: 200
+                cursor: draggedIndex !== null ? 'grabbing' : 'grab',
+                maxWidth: 200,
+                opacity: draggedIndex === index ? 0.5 : 1,
+                transform: dragOverIndex === index && draggedIndex !== index ? 'scale(1.05)' : 'none',
+                transition: 'opacity 0.2s, transform 0.2s'
               }}
             >
               <span style={{
@@ -481,7 +544,7 @@ const TerminalPanel: React.FC = () => {
       {/* 主内容区 */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* 终端容器 */}
-        <div style={{ flex: 1, backgroundColor: 'var(--bg-primary)', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ flex: 1, backgroundColor: 'transparent', overflow: 'hidden', position: 'relative' }}>
           <style>{`
             @keyframes progressLine {
               0% {
@@ -531,7 +594,7 @@ const TerminalPanel: React.FC = () => {
                 right: 0,
                 bottom: 0,
                 display: activeSessionId === session.id ? 'block' : 'none',
-                backgroundColor: 'var(--bg-primary)'
+                backgroundColor: 'transparent'
               }}
               tabIndex={0}
             />

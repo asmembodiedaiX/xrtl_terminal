@@ -19,15 +19,15 @@ const Toast: React.FC<ToastProps> = ({ message, type, duration = 3000, onClose }
   const getBackgroundColor = () => {
     switch (type) {
       case 'success':
-        return '#2d7d46';
+        return 'var(--success-color)';
       case 'error':
-        return '#c42b1c';
+        return 'var(--danger-color)';
       case 'warning':
-        return '#b36b00';
+        return 'var(--warning-color)';
       case 'info':
-        return '#0f4c81';
+        return 'var(--accent-color)';
       default:
-        return '#2d2d2d';
+        return 'var(--bg-tertiary)';
     }
   };
 

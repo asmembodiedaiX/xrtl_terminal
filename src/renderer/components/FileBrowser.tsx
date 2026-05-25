@@ -460,15 +460,15 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
         width: '350px',
         minWidth: '350px',
         maxWidth: '350px',
-        backgroundColor: '#1e1e1e',
-        borderLeft: '1px solid #3c3c3c'
+        backgroundColor: 'var(--bg-primary)',
+        borderLeft: '1px solid var(--border-color)'
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           padding: '8px 12px',
-          backgroundColor: '#252526',
-          borderBottom: '1px solid #3c3c3c',
+          backgroundColor: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border-color)',
           gap: '8px'
         }}>
           <button
@@ -476,8 +476,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
             disabled={browserPath === '/'}
             style={{
               padding: '6px 12px',
-              backgroundColor: '#3c3c3c',
-              color: '#d4d4d4',
+              backgroundColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
               border: 'none',
               borderRadius: '4px',
               cursor: browserPath === '/' ? 'not-allowed' : 'pointer',
@@ -491,8 +491,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
             onClick={handleUpload}
             style={{
               padding: '6px 12px',
-              backgroundColor: '#3c3c3c',
-              color: '#d4d4d4',
+              backgroundColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -505,8 +505,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
             onClick={handleDownloadFolder}
             style={{
               padding: '6px 12px',
-              backgroundColor: '#3c3c3c',
-              color: '#d4d4d4',
+              backgroundColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -519,11 +519,11 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
 
         <div style={{
           padding: '8px 12px',
-          backgroundColor: '#252526',
-          borderBottom: '1px solid #3c3c3c'
+          backgroundColor: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border-color)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: '#858585', fontSize: '14px', flexShrink: 0 }}>📁</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '14px', flexShrink: 0 }}>📁</span>
             <input
               type="text"
               value={inputPath}
@@ -532,9 +532,9 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
               style={{
                 flex: 1,
                 padding: '6px 8px',
-                backgroundColor: '#1e1e1e',
-                color: '#d4d4d4',
-                border: '1px solid #3c3c3c',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '4px',
                 fontSize: '12px',
                 fontFamily: 'monospace',
@@ -553,7 +553,7 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
             <div style={{
               padding: '40px',
               textAlign: 'center',
-              color: '#858585'
+              color: 'var(--text-secondary)'
             }}>
               加载中...
             </div>
@@ -561,7 +561,7 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
             <div style={{
               padding: '40px',
               textAlign: 'center',
-              color: '#f14c4c'
+              color: 'var(--danger-color)'
             }}>
               {error}
               <br />
@@ -570,8 +570,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
                 style={{
                   marginTop: '16px',
                   padding: '6px 12px',
-                  backgroundColor: '#3c3c3c',
-                  color: '#d4d4d4',
+                  backgroundColor: 'var(--border-color)',
+                  color: 'var(--text-primary)',
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer'
@@ -584,9 +584,9 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
             <div>
               <div style={{
                 padding: '8px 12px',
-                color: '#858585',
+                color: 'var(--text-secondary)',
                 fontSize: '12px',
-                borderBottom: '1px solid #3c3c3c'
+                borderBottom: '1px solid var(--border-color)'
               }}>
                 共 {files.length} 个文件，
                 {files.filter(f => f.type === 'directory').length} 个文件夹，
@@ -601,7 +601,7 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
                     alignItems: 'center',
                     padding: '8px 12px',
                     cursor: file.type === 'directory' ? 'pointer' : 'default',
-                    borderBottom: '1px solid #2a2d2e'
+                    borderBottom: '1px solid var(--border-color)'
                   }}
                   onDoubleClick={() => handleDirectoryClick(file)}
                   className="file-item-hover"
@@ -617,7 +617,7 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
                     overflow: 'hidden'
                   }}>
                     <div style={{
-                      color: file.type === 'directory' ? '#569cd6' : '#d4d4d4',
+                      color: file.type === 'directory' ? 'var(--accent-color)' : '#ffffff',
                       fontSize: '13px',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -626,7 +626,7 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
                       {file.name}
                     </div>
                     <div style={{
-                      color: '#858585',
+                      color: 'var(--text-secondary)',
                       fontSize: '11px'
                     }}>
                       {file.type === 'directory' ? '文件夹' : formatFileSize(file.size)}
@@ -642,8 +642,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
                       }}
                       style={{
                         padding: '4px 8px',
-                        backgroundColor: '#3c3c3c',
-                        color: '#d4d4d4',
+                        backgroundColor: 'var(--border-color)',
+                        color: 'var(--text-primary)',
                         border: 'none',
                         borderRadius: '4px',
                         cursor: 'pointer',
@@ -662,7 +662,7 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
 
       <style>{`
         .file-item-hover:hover {
-          background-color: #2a2d2e !important;
+          background-color: var(--bg-hover) !important;
         }
 
         .file-browser-scrollbar::-webkit-scrollbar {
@@ -670,16 +670,16 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
         }
 
         .file-browser-scrollbar::-webkit-scrollbar-track {
-          background: #1e1e1e;
+          background: var(--bg-primary);
         }
 
         .file-browser-scrollbar::-webkit-scrollbar-thumb {
-          background: #3c3c3c;
+          background: var(--border-color);
           border-radius: 4px;
         }
 
         .file-browser-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #4c4c4c;
+          background: var(--bg-hover);
         }
       `}</style>
     </>
