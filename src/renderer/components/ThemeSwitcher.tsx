@@ -35,14 +35,15 @@ const ThemeSwitcher: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          padding: '4px 8px',
+          padding: '6px 12px',
           background: 'var(--bg-tertiary)',
           border: '1px solid var(--border-color)',
           borderRadius: 4,
           color: 'var(--text-primary)',
           cursor: 'pointer',
-          fontSize: 12,
-          minWidth: 80
+          fontSize: 13,
+          minWidth: 90,
+          height: 32
         }}
         title="切换主题"
       >

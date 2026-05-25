@@ -144,14 +144,19 @@ const TerminalPanel: React.FC = () => {
       }
     });
 
-    // Handle terminal resize
+    // Handle terminal resize (RAF 节流，避免最大化/最小化时频繁重绘导致闪烁)
+    let resizeRafId: number | null = null;
     const resizeObserver = new ResizeObserver(() => {
-      if (terminalInstancesRef.current.has(session.id)) {
-        const { fitAddon, terminal } = terminalInstancesRef.current.get(session.id)!;
-        fitAddon.fit();
-        const { cols, rows } = terminal;
-        ipcRenderer.send('ssh-resize', { sessionId: session.id, cols, rows });
-      }
+      if (resizeRafId !== null) return;
+      resizeRafId = requestAnimationFrame(() => {
+        resizeRafId = null;
+        if (terminalInstancesRef.current.has(session.id)) {
+          const { fitAddon, terminal } = terminalInstancesRef.current.get(session.id)!;
+          fitAddon.fit();
+          const { cols, rows } = terminal;
+          ipcRenderer.send('ssh-resize', { sessionId: session.id, cols, rows });
+        }
+      });
     });
 
     resizeObserver.observe(container);
@@ -218,40 +223,9 @@ const TerminalPanel: React.FC = () => {
       ipcRenderer.removeAllListeners(`ssh-data-${session.id}`);
       ipcRenderer.removeAllListeners(`ssh-close-${session.id}`);
 
-      // 高亮终端内容的函数
-      const highlightTerminalContent = (text: string): string => {
-        // 如果文本已经包含ANSI转义序列，直接返回
-        if (text.includes('\x1b[')) {
-          return text;
-        }
-
-        let result = text;
-
-        // 按照优先级进行替换，避免相互干扰
-        // 1. URL（蓝色）
-        result = result.replace(/https?:\/\/[^\s]+/g, (match) => `\x1b[34m${match}\x1b[0m`);
-        // 2. IP地址（青色）
-        result = result.replace(/(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/g, (match) => `\x1b[36m${match}\x1b[0m`);
-        // 3. 日期时间（黄色）
-        result = result.replace(/\d{4}[-/]\d{2}[-/]\d{2} \d{2}:\d{2}:\d{2}/g, (match) => `\x1b[33m${match}\x1b[0m`);
-        // 4. 时间（黄色）
-        result = result.replace(/\d{2}:\d{2}:\d{2}/g, (match) => `\x1b[33m${match}\x1b[0m`);
-        // 5. 日期（紫色）
-        result = result.replace(/\d{4}[-/]\d{2}[-/]\d{2}/g, (match) => `\x1b[35m${match}\x1b[0m`);
-        // 6. 文件路径（绿色）
-        result = result.replace(/\/[\w\-\.\/]+/g, (match) => `\x1b[32m${match}\x1b[0m`);
-        // 7. 错误信息（红色）
-        result = result.replace(/\b(error|Error|ERROR|failed|Failed|FAILED|warning|Warning|WARNING)\b/g, (match) => `\x1b[31m${match}\x1b[0m`);
-        // 8. 成功信息（绿色加粗）
-        result = result.replace(/\b(success|Success|SUCCESS|done|Done|DONE|ok|OK)\b/g, (match) => `\x1b[1;32m${match}\x1b[0m`);
-
-        return result;
-      };
-
       // Setup data listener FIRST before connecting
       ipcRenderer.on(`ssh-data-${session.id}`, (_event, data: string) => {
-        const highlightedData = highlightTerminalContent(data);
-        terminal.write(highlightedData);
+        terminal.write(data);
       });
 
       // Setup close listener FIRST before connecting
@@ -372,26 +346,25 @@ const TerminalPanel: React.FC = () => {
           font-style: normal;
         }
 
-        /* Custom scrollbar for xterm */
+        /* 防止窗口大小变化时 xterm 内部元素露出默认白色背景 */
+        .xterm, .xterm .xterm-screen, .xterm .xterm-viewport, .xterm canvas {
+          background-color: #1e1e1e !important;
+        }
         .xterm-viewport::-webkit-scrollbar {
           width: 10px;
           height: 10px;
         }
-
         .xterm-viewport::-webkit-scrollbar-track {
           background: var(--bg-secondary);
         }
-
         .xterm-viewport::-webkit-scrollbar-thumb {
           background: var(--border-color);
           border-radius: 5px;
         }
-
         .xterm-viewport::-webkit-scrollbar-thumb:hover {
           background: var(--text-secondary);
         }
-
-        /* For Firefox */
+        /* Firefox scrollbar */
         .xterm-viewport {
           scrollbar-width: thin;
           scrollbar-color: var(--border-color) var(--bg-secondary);

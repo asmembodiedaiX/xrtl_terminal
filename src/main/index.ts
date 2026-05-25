@@ -30,11 +30,59 @@ function createWindow() {
     backgroundColor: '#1e1e1e',
     show: false,
     paintWhenInitiallyHidden: true,
+    enableLargerThanScreen: true,
+    hasShadow: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
       devTools: !app.isPackaged,
       backgroundThrottling: false
+    }
+  });
+
+  // VSCode 风格：解决最大化/最小化时的白色闪烁问题
+  let isResizing = false;
+  let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  mainWindow.on('maximize', () => {
+    isResizing = true;
+    if (mainWindow) {
+      mainWindow.setBackgroundColor('#1e1e1e');
+    }
+    mainWindow?.webContents.send('window-maximized', true);
+  });
+
+  mainWindow.on('unmaximize', () => {
+    isResizing = true;
+    if (mainWindow) {
+      mainWindow.setBackgroundColor('#1e1e1e');
+    }
+    mainWindow?.webContents.send('window-maximized', false);
+  });
+
+  mainWindow.on('resize', () => {
+    isResizing = true;
+    if (mainWindow) {
+      mainWindow.setBackgroundColor('#1e1e1e');
+    }
+
+    // 防抖处理：resize 结束后恢复
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = setTimeout(() => {
+      isResizing = false;
+    }, 100);
+  });
+
+  mainWindow.on('minimize', () => {
+    isResizing = false;
+  });
+
+  // 窗口显示前确保背景色已设置
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (mainWindow) {
+      mainWindow.setBackgroundColor('#1e1e1e');
     }
   });
 
@@ -48,15 +96,31 @@ function createWindow() {
     rendererPath = path.join(__dirname, '..', 'renderer', 'index.html');
   }
 
+  // 使用标准的 ready-to-show 事件显示窗口
+  // 添加超时后备以防窗口卡住
+  let showWindowTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // 超时后备：如果 5 秒后还没显示，强制显示窗口
+  showWindowTimeout = setTimeout(() => {
+    console.log('Force showing window due to timeout');
+    mainWindow?.show();
+  }, 5000);
+
+  mainWindow.once('ready-to-show', () => {
+    if (showWindowTimeout) {
+      clearTimeout(showWindowTimeout);
+    }
+    // 微小延迟确保渲染完成
+    setTimeout(() => {
+      mainWindow?.show();
+    }, 50);
+  });
+
   if (!isPackaged) {
     mainWindow.loadURL(rendererPath);
   } else {
     mainWindow.loadFile(rendererPath);
   }
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
-  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -69,11 +133,25 @@ function createWindow() {
   }
 }
 
-// 优化启动性能
+// 优化启动性能和窗口渲染（参考 VSCode 实现）
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('force-gpu-rasterization');
 app.commandLine.appendSwitch('enable-features', 'VaapiVideoDecoder');
+
+// VSCode 风格的渲染优化
+app.commandLine.appendSwitch('enable-transparent-visuals');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('enable-gpu-memory-buffer-compositor');
+
+// 禁用某些可能导致闪烁的特性
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-windows10-custom-titlebar');
+
+// 启用平滑滚动和动画
+app.commandLine.appendSwitch('enable-smooth-scrolling');
+app.commandLine.appendSwitch('enable-experimental-web-platform-features');
 
 app.whenReady().then(() => {
   createWindow();
@@ -211,37 +289,80 @@ ipcMain.handle('delete-ssh-config', async (_event, id) => {
   }
 });
 
-ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
+// 弱连接增强配置
+const WEAK_CONNECTION_CONFIG = {
+  maxRetries: 3,                    // 最大重试次数
+  baseRetryDelay: 2000,             // 基础重试延迟(ms)
+  maxRetryDelay: 15000,             // 最大重试延迟(ms)
+  readyTimeout: 30000,              // 连接超时时间(ms) - 增加到30秒
+  handshakeTimeout: 15000,          // 握手超时时间(ms)
+  keepaliveInterval: 5000,          // 心跳间隔(ms)
+  keepaliveCountMax: 5,             // 最大心跳失败次数
+  algorithms: {
+    kex: [
+      'curve25519-sha256@libssh.org',
+      'ecdh-sha2-nistp256',
+      'ecdh-sha2-nistp384',
+      'ecdh-sha2-nistp521',
+      'diffie-hellman-group-exchange-sha256',
+      'diffie-hellman-group14-sha256',
+      'diffie-hellman-group14-sha1'
+    ],
+    cipher: [
+      'aes128-gcm@openssh.com',
+      'aes256-gcm@openssh.com',
+      'aes128-ctr',
+      'aes192-ctr',
+      'aes256-ctr',
+      'aes128-cbc',
+      'aes192-cbc',
+      'aes256-cbc'
+    ],
+    hmac: [
+      'hmac-sha2-256',
+      'hmac-sha2-512',
+      'hmac-sha1'
+    ],
+    compress: [
+      'none'
+    ]
+  }
+};
+
+// 指数退避算法
+function getRetryDelay(attempt: number): number {
+  const delay = WEAK_CONNECTION_CONFIG.baseRetryDelay * Math.pow(2, attempt);
+  // 添加随机抖动，避免重试风暴
+  const jitter = delay * 0.2 * (Math.random() - 0.5);
+  return Math.min(delay + jitter, WEAK_CONNECTION_CONFIG.maxRetryDelay);
+}
+
+// 带重试机制的SSH连接
+async function connectWithRetry(sessionId: string, config: any, attempt: number = 0): Promise<any> {
   const { Client } = require('ssh2');
   const conn = new Client();
+  const maxRetries = WEAK_CONNECTION_CONFIG.maxRetries;
 
   return new Promise((resolve, reject) => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     conn.on('ready', () => {
-      // Use a large default size that will be updated by resize later
-      conn.shell({ cols: 200, rows: 100 }, (err: any, stream: any) => {
+      if (timeoutId) clearTimeout(timeoutId);
+
+      conn.shell({ cols: 200, rows: 100, term: 'xterm-256color' }, (err: any, stream: any) => {
         if (err) {
           conn.end();
           reject(err);
           return;
         }
 
-        // Create SFTP session for file operations
         conn.sftp((sftpErr: any, sftp: any) => {
           if (sftpErr) {
             console.warn('SFTP connection failed:', sftpErr);
           }
 
           sshSessions.set(sessionId, { client: conn, stream, sftp: sftpErr ? undefined : sftp });
-          resolve({ success: true });
-
-          setTimeout(() => {
-            const init = [
-              "export TERM=xterm-256color",
-              "export PS1='\\[\\e[32m\\][\\u@\\h\\[\\e[0m\\]:\\[\\e[34m\\]\\w\\[\\e[32m\\]]\\[\\e[0m\\]# '",
-              "printf '\\033[4A\\033[J'",
-            ].join('; ');
-            stream.write('\r' + init + '\r');
-          }, 0);
+          resolve({ success: true, retries: attempt });
         });
 
         stream.on('data', (data: Buffer) => {
@@ -261,10 +382,34 @@ ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
     });
 
     conn.on('error', (err: any) => {
-      reject(err);
+      if (timeoutId) clearTimeout(timeoutId);
+
+      // 判断是否需要重试
+      const shouldRetry = attempt < maxRetries &&
+        (err.message.includes('ETIMEDOUT') ||
+          err.message.includes('ECONNRESET') ||
+          err.message.includes('ECONNREFUSED') ||
+          err.message.includes('ENETUNREACH') ||
+          err.message.includes('EHOSTUNREACH') ||
+          err.message.includes('EPIPE') ||
+          err.message.includes('handshake failed'));
+
+      if (shouldRetry) {
+        const delay = getRetryDelay(attempt);
+        console.log(`SSH连接失败，正在进行第 ${attempt + 1} 次重试，延迟 ${delay.toFixed(0)}ms...`);
+
+        setTimeout(() => {
+          connectWithRetry(sessionId, config, attempt + 1)
+            .then(resolve)
+            .catch(reject);
+        }, delay);
+      } else {
+        reject(err);
+      }
     });
 
     conn.on('end', () => {
+      if (timeoutId) clearTimeout(timeoutId);
       sshSessions.delete(sessionId);
       if (mainWindow) {
         mainWindow.webContents.send(`ssh-close-${sessionId}`);
@@ -272,7 +417,20 @@ ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
     });
 
     conn.on('timeout', () => {
-      reject(new Error('连接超时'));
+      if (timeoutId) clearTimeout(timeoutId);
+
+      if (attempt < maxRetries) {
+        const delay = getRetryDelay(attempt);
+        console.log(`SSH连接超时，正在进行第 ${attempt + 1} 次重试，延迟 ${delay.toFixed(0)}ms...`);
+
+        setTimeout(() => {
+          connectWithRetry(sessionId, config, attempt + 1)
+            .then(resolve)
+            .catch(reject);
+        }, delay);
+      } else {
+        reject(new Error('连接超时'));
+      }
     });
 
     conn.connect({
@@ -280,11 +438,21 @@ ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
       port: config.port || 22,
       username: config.username,
       password: config.password,
-      readyTimeout: 10000,
-      keepaliveInterval: 2000,
-      keepaliveCountMax: 2
+      readyTimeout: WEAK_CONNECTION_CONFIG.readyTimeout,
+      handshakeTimeout: WEAK_CONNECTION_CONFIG.handshakeTimeout,
+      keepaliveInterval: WEAK_CONNECTION_CONFIG.keepaliveInterval,
+      keepaliveCountMax: WEAK_CONNECTION_CONFIG.keepaliveCountMax,
+      algorithms: WEAK_CONNECTION_CONFIG.algorithms,
+      debug: (msg: string) => {
+        // 可选：开启调试日志
+        // console.log('SSH Debug:', msg);
+      }
     });
   });
+}
+
+ipcMain.handle('ssh-connect', async (_event, { sessionId, config }) => {
+  return connectWithRetry(sessionId, config, 0);
 });
 
 // SFTP File Operations

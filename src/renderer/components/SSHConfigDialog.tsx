@@ -402,7 +402,8 @@ const dialogOverlayStyle: React.CSSProperties = {
 };
 
 const dialogStyle: React.CSSProperties = {
-  width: 600,
+  width: 750,
+  maxHeight: 800,
   backgroundColor: 'var(--bg-primary)',
   borderRadius: 8,
   boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
@@ -458,7 +459,7 @@ const tabButtonStyle: React.CSSProperties = {
 
 const contentStyle = {
   padding: 16,
-  maxHeight: 400,
+  maxHeight: 600,
   overflowY: 'auto',
   scrollbarWidth: 'thin',
   scrollbarColor: 'var(--border-color) var(--bg-tertiary)',

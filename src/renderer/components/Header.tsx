@@ -8,10 +8,10 @@ const Header: React.FC = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 32,
+    height: 48,
     backgroundColor: 'var(--bg-secondary)',
     borderBottom: '1px solid var(--border-color)',
-    padding: '0 4px',
+    padding: '0 12px',
     WebkitAppRegion: 'drag',
     cursor: 'default',
     zIndex: 1000,
@@ -27,7 +27,7 @@ const Header: React.FC = () => {
 
   const controlButtonStyle = {
     width: 46,
-    height: 32,
+    height: 48,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -53,9 +53,9 @@ const Header: React.FC = () => {
 
   return (
     <div style={headerStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Logo size={16} />
-        <span style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 'bold' }}>XRTL Terminal</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Logo size={24} />
+        <span style={{ color: 'var(--text-primary)', fontSize: 16, fontWeight: 'bold' }}>XRTL Terminal</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, WebkitAppRegion: 'no-drag' } as any}>
