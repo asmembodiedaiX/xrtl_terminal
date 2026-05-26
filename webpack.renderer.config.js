@@ -77,6 +77,10 @@ module.exports = {
         {
           from: path.resolve(__dirname, 'resources/icons'),
           to: 'icons'
+        },
+        {
+          from: path.resolve(__dirname, 'public'),
+          to: '.'
         }
       ]
     }),
