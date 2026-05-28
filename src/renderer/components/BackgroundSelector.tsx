@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../styles/ThemeContext';
 
 interface BackgroundSelectorProps {
@@ -9,7 +9,6 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
   const { updateBackground } = useTheme();
   const [currentBackground, setCurrentBackground] = useState<string>('/girl.png');
   const [backgrounds, setBackgrounds] = useState<string[]>([
-    './girl.png',
     './background_pictures/拾光_周度精选_0f31d889bd773c2e.jpg',
     './background_pictures/拾光_周度精选_4768f506b8331305.jpg',
     './background_pictures/拾光_周度精选_62b1522c475ac8fc.jpg',
@@ -21,6 +20,7 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
     './background_pictures/拾光_周度精选_371351206c419e50.jpg',
     './background_pictures/拾光_周度精选_e2189124fdd8f467.jpg',
   ]);
+  const styleRef = useRef<HTMLStyleElement | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('app-background');
@@ -34,6 +34,38 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
         console.error('Failed to parse saved background:', e);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: var(--bg-tertiary);
+        border-radius: 3px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--accent-color);
+        border-radius: 3px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: var(--text-secondary);
+      }
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent-color) var(--bg-tertiary);
+      }
+    `;
+    document.head.appendChild(style);
+    styleRef.current = style;
+
+    return () => {
+      if (styleRef.current) {
+        document.head.removeChild(styleRef.current);
+      }
+    };
   }, []);
 
   const handleBackgroundChange = (imagePath: string) => {
@@ -91,7 +123,7 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
         </button>
       </div>
 
-      <div style={{
+      <div className="custom-scrollbar" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
         gap: '8px',

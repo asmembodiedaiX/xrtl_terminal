@@ -196,8 +196,8 @@ export const themes: Record<string, Theme> = {
   purple: {
     name: '紫色',
     colors: {
-      bgPrimary: 'rgba(45, 27, 78, 0.85)',
-      bgSecondary: 'rgba(30, 17, 51, 0.9)',
+      bgPrimary: 'transparent',
+      bgSecondary: 'transparent',
       bgTertiary: '#150a25',
       border: '#6b21a8',
       textPrimary: '#e9d5ff',
