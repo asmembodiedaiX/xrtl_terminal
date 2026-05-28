@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ipcRenderer } from 'electron';
 import Logo from './Logo';
 import ThemeSwitcher from './ThemeSwitcher';
+import BackgroundSelector from './BackgroundSelector';
 
 const Header: React.FC = () => {
+  const [showBackgroundSelector, setShowBackgroundSelector] = useState(false);
   const headerStyle: any = {
     display: 'flex',
     alignItems: 'center',
@@ -60,6 +62,37 @@ const Header: React.FC = () => {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, WebkitAppRegion: 'no-drag' } as any}>
         <ThemeSwitcher />
+        
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '4px',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              fontSize: '13px',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+            }}
+            title="更换背景图片"
+          >
+            🖼️
+          </button>
+          {showBackgroundSelector && (
+            <BackgroundSelector onClose={() => setShowBackgroundSelector(false)} />
+          )}
+        </div>
 
         <div style={windowControlStyle}>
           <button

@@ -11,6 +11,11 @@ jobs:
   build:
     runs-on: windows-latest
 
+    env:
+      ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -21,17 +26,52 @@ jobs:
         node-version: '20.x'
         cache: 'npm'
 
+    - name: Cache electron-builder
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ env.ELECTRON_BUILDER_CACHE }}
+          ~/.npm/_npx/*/node_modules
+        key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-electron-builder-
+
     - name: Install npm dependencies
       run: npm install
+      env:
+        ELECTRON_MIRROR: ${{ env.ELECTRON_MIRROR }}
+        ELECTRON_BUILDER_BINARIES_MIRROR: ${{ env.ELECTRON_BUILDER_BINARIES_MIRROR }}
 
     - name: Build application
       run: npm run build
+      env:
+        NODE_ENV: production
+
+    - name: Verify public files are copied
+      run: |
+        Write-Host "Checking build/renderer directory..."
+        Get-ChildItem -Path build/renderer -Name
+        Write-Host "`nChecking if girl.png exists..."
+        if (Test-Path "build/renderer/girl.png") {
+          Write-Host "✅ girl.png found in build directory"
+        } else {
+          Write-Host "❌ girl.png NOT found!"
+          exit 1
+        }
 
     - name: Package for Windows (portable exe)
       run: npm run dist -- --windows portable
+      env:
+        ELECTRON_BUILDER_BINARIES_MIRROR: ${{ env.ELECTRON_BUILDER_BINARIES_MIRROR }}
 
     - name: Package for Windows (installer)
       run: npm run dist -- --windows nsis
+      env:
+        ELECTRON_BUILDER_BINARIES_MIRROR: ${{ env.ELECTRON_BUILDER_BINARIES_MIRROR }}
+
+    - name: List dist directory
+      run: dir dist\*.exe /b
+      shell: cmd
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -41,6 +81,7 @@ jobs:
           dist/*.exe
           dist/*.zip
           dist/*.nsis-installer.exe
+        if-no-files-found: error
 
   release:
     needs: build

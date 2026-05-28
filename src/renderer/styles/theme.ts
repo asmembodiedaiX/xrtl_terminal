@@ -46,8 +46,8 @@ export const themes: Record<string, Theme> = {
   dark: {
     name: '深色',
     colors: {
-      bgPrimary: '#1e1e1e',
-      bgSecondary: '#252526',
+      bgPrimary: 'transparent',
+      bgSecondary: 'transparent',
       bgTertiary: '#2d2d30',
       border: '#3c3c3c',
       textPrimary: '#cccccc',
@@ -57,7 +57,7 @@ export const themes: Record<string, Theme> = {
       warning: '#dcdcaa',
       danger: '#f14c4c',
       // Terminal colors
-      terminalBg: '#1e1e1e',
+      terminalBg: 'transparent',
       terminalFg: '#d4d4d4',
       terminalCursor: '#aeafad',
       terminalCursorAccent: '#000000',
@@ -82,8 +82,8 @@ export const themes: Record<string, Theme> = {
   light: {
     name: '浅色',
     colors: {
-      bgPrimary: '#ffffff',
-      bgSecondary: '#f3f3f3',
+      bgPrimary: 'transparent',
+      bgSecondary: 'transparent',
       bgTertiary: '#e8e8e8',
       border: '#d4d4d4',
       textPrimary: '#333333',
@@ -93,7 +93,7 @@ export const themes: Record<string, Theme> = {
       warning: '#795e26',
       danger: '#e81123',
       // Terminal colors
-      terminalBg: '#fafafa',
+      terminalBg: 'transparent',
       terminalFg: '#3c3c3c',
       terminalCursor: '#000000',
       terminalCursorAccent: '#ffffff',
@@ -118,8 +118,8 @@ export const themes: Record<string, Theme> = {
   blue: {
     name: '蓝色',
     colors: {
-      bgPrimary: '#1a1a2e',
-      bgSecondary: '#16213e',
+      bgPrimary: 'transparent',
+      bgSecondary: 'transparent',
       bgTertiary: '#0f3460',
       border: '#e94560',
       textPrimary: '#eaeaea',
@@ -129,7 +129,7 @@ export const themes: Record<string, Theme> = {
       warning: '#ffc107',
       danger: '#ff6b6b',
       // Terminal colors
-      terminalBg: '#1a1a2e',
+      terminalBg: 'transparent',
       terminalFg: '#eaeaea',
       terminalCursor: '#e94560',
       terminalCursorAccent: '#000000',
@@ -149,6 +149,12 @@ export const themes: Record<string, Theme> = {
       terminalBrightMagenta: '#c084fc',
       terminalBrightCyan: '#67e8f9',
       terminalBrightWhite: '#ffffff'
+    },
+    background: {
+      image: './由内而外2字符海报超宽m.jpg',
+      blur: 0,
+      opacity: 1,
+      brightness: 1
     }
   },
   green: {
@@ -223,7 +229,7 @@ export const themes: Record<string, Theme> = {
       terminalBrightWhite: '#ffffff'
     },
     background: {
-      image: '/girl.png',
+      image: './default.jpg',
       blur: 0,
       opacity: 1,
       brightness: 1
@@ -232,8 +238,8 @@ export const themes: Record<string, Theme> = {
   orange: {
     name: '橙色',
     colors: {
-      bgPrimary: '#2d1f12',
-      bgSecondary: '#3d2914',
+      bgPrimary: 'transparent',
+      bgSecondary: 'transparent',
       bgTertiary: '#4d3316',
       border: '#ea580c',
       textPrimary: '#fed7aa',
@@ -243,7 +249,7 @@ export const themes: Record<string, Theme> = {
       warning: '#fbbf24',
       danger: '#f87171',
       // Terminal colors
-      terminalBg: '#2d1f12',
+      terminalBg: 'transparent',
       terminalFg: '#fed7aa',
       terminalCursor: '#fb923c',
       terminalCursorAccent: '#000000',
@@ -263,13 +269,19 @@ export const themes: Record<string, Theme> = {
       terminalBrightMagenta: '#fda4af',
       terminalBrightCyan: '#67e8f9',
       terminalBrightWhite: '#ffffff'
+    },
+    background: {
+      image: './珍妮K-pop3840_2160.jpg',
+      blur: 0,
+      opacity: 1,
+      brightness: 1
     }
   },
   nord: {
     name: 'Nord',
     colors: {
-      bgPrimary: 'rgba(46, 52, 64, 0.85)',
-      bgSecondary: 'rgba(59, 66, 82, 0.9)',
+      bgPrimary: 'transparent',
+      bgSecondary: 'transparent',
       bgTertiary: '#434c5e',
       border: '#4c566a',
       textPrimary: '#d8dee9',
@@ -279,7 +291,7 @@ export const themes: Record<string, Theme> = {
       warning: '#ebcb8b',
       danger: '#bf616a',
       // Terminal colors
-      terminalBg: 'rgba(46, 52, 64, 0.9)',
+      terminalBg: 'transparent',
       terminalFg: '#d8dee9',
       terminalCursor: '#88c0d0',
       terminalCursorAccent: '#000000',
@@ -301,10 +313,10 @@ export const themes: Record<string, Theme> = {
       terminalBrightWhite: '#ffffff'
     },
     background: {
-      image: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80',
-      blur: 15,
-      opacity: 0.35,
-      brightness: 0.6
+      image: './default2.jpg',
+      blur: 0,
+      opacity: 1,
+      brightness: 1
     }
   },
   solarized: {

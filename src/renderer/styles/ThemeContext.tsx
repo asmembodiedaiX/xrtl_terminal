@@ -5,6 +5,7 @@ interface ThemeContextType {
   currentTheme: Theme;
   themeName: string;
   setTheme: (name: string) => void;
+  updateBackground: (background: Theme['background']) => void;
   themes: typeof themes;
 }
 
@@ -12,6 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [themeName, setThemeName] = useState<string>('dark');
+  const [customBackground, setCustomBackground] = useState<Theme['background'] | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     if (!isInitialized) return;
     const theme = themes[themeName];
+    const background = customBackground || theme.background;
     document.documentElement.style.setProperty('--bg-primary', theme.colors.bgPrimary);
     document.documentElement.style.setProperty('--bg-secondary', theme.colors.bgSecondary);
     document.documentElement.style.setProperty('--bg-tertiary', theme.colors.bgTertiary);
@@ -58,16 +61,16 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     document.documentElement.style.setProperty('--terminal-bright-white', theme.colors.terminalBrightWhite);
     
     // Background image settings
-    if (theme.background?.image) {
-      document.documentElement.style.setProperty('--bg-image', `url(${theme.background.image})`);
-      document.documentElement.style.setProperty('--bg-blur', theme.background.blur ? `${theme.background.blur}px` : '0px');
-      document.documentElement.style.setProperty('--bg-opacity', theme.background.opacity ? `${theme.background.opacity}` : '0.5');
-      document.documentElement.style.setProperty('--bg-brightness', theme.background.brightness ? `${theme.background.brightness}` : '1');
+    if (background?.image) {
+      document.documentElement.style.setProperty('--bg-image', `url(${background.image})`);
+      document.documentElement.style.setProperty('--bg-blur', background.blur ? `${background.blur}px` : '0px');
+      document.documentElement.style.setProperty('--bg-opacity', background.opacity ? `${background.opacity}` : '0.5');
+      document.documentElement.style.setProperty('--bg-brightness', background.brightness ? `${background.brightness}` : '1');
       document.documentElement.style.setProperty('--bg-image-enabled', 'true');
     } else {
       document.documentElement.style.setProperty('--bg-image-enabled', 'false');
     }
-  }, [themeName, isInitialized]);
+  }, [themeName, customBackground, isInitialized]);
 
   const setTheme = (name: string) => {
     if (themes[name]) {
@@ -76,11 +79,21 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const updateBackground = (background: Theme['background']) => {
+    setCustomBackground(background);
+    if (background) {
+      localStorage.setItem('app-background', JSON.stringify(background));
+    } else {
+      localStorage.removeItem('app-background');
+    }
+  };
+
   return (
     <ThemeContext.Provider value={{
       currentTheme: themes[themeName],
       themeName,
       setTheme,
+      updateBackground,
       themes
     }}>
       {children}

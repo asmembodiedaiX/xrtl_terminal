@@ -8,6 +8,7 @@ import { useTheme } from '../styles/ThemeContext';
 const MainLayout: React.FC = () => {
   const { currentTheme } = useTheme();
   const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [bgImageEnabled, setBgImageEnabled] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef(0);
@@ -19,6 +20,20 @@ const MainLayout: React.FC = () => {
     startXRef.current = e.clientX;
     startWidthRef.current = sidebarWidth;
   };
+
+  useEffect(() => {
+    const checkBgImage = () => {
+      const enabled = document.documentElement.style.getPropertyValue('--bg-image-enabled');
+      setBgImageEnabled(enabled === 'true');
+    };
+    
+    checkBgImage();
+    
+    const observer = new MutationObserver(checkBgImage);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -56,7 +71,7 @@ const MainLayout: React.FC = () => {
       position: 'relative'
     }}>
       {/* Background image layer */}
-      {currentTheme.background?.image && (
+      {bgImageEnabled && (
         <div 
           style={{
             position: 'absolute',
@@ -64,12 +79,12 @@ const MainLayout: React.FC = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundImage: `url(${currentTheme.background.image})`,
+            backgroundImage: 'var(--bg-image)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            filter: `blur(${currentTheme.background.blur || 0}px) brightness(${currentTheme.background.brightness || 1})`,
-            opacity: currentTheme.background.opacity || 0.5,
+            filter: 'blur(var(--bg-blur)) brightness(var(--bg-brightness))',
+            opacity: 'var(--bg-opacity)',
             zIndex: 0
           }}
         />
