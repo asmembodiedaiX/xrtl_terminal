@@ -51,11 +51,11 @@ jobs:
       run: |
         Write-Host "Checking build/renderer directory..."
         Get-ChildItem -Path build/renderer -Name
-        Write-Host "`nChecking if girl.png exists..."
-        if (Test-Path "build/renderer/girl.png") {
-          Write-Host "✅ girl.png found in build directory"
+        Write-Host "`nChecking if default.jpg exists..."
+        if (Test-Path "build/renderer/default.jpg") {
+          Write-Host "✅ default.jpg found in build directory"
         } else {
-          Write-Host "❌ girl.png NOT found!"
+          Write-Host "❌ default.jpg NOT found!"
           exit 1
         }
 

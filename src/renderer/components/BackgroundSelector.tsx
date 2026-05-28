@@ -7,7 +7,7 @@ interface BackgroundSelectorProps {
 
 const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
   const { updateBackground } = useTheme();
-  const [currentBackground, setCurrentBackground] = useState<string>('/girl.png');
+  const [currentBackground, setCurrentBackground] = useState<string>('./default.jpg');
   const [backgrounds, setBackgrounds] = useState<string[]>([
     './background_pictures/拾光_周度精选_0f31d889bd773c2e.jpg',
     './background_pictures/拾光_周度精选_4768f506b8331305.jpg',
