@@ -10,6 +10,10 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
   const [currentBackground, setCurrentBackground] = useState<string>('/default.png');
   const [backgrounds, setBackgrounds] = useState<string[]>([
     './background_pictures/FragPunk游戏海报3840_2160.jpg',
+    './background_pictures/拾光_中转站_685a0dd18fb6a08a.jpg',
+    './background_pictures/拾光_中转站_b05b9d5ad24f4333.jpg',
+    './background_pictures/拾光_中转站_cd0db773eb2dc1b0.jpg',
+    './background_pictures/拾光_中转站_e05ebd93369ce542.jpg',
     './background_pictures/拾光_周度精选_0f31d889bd773c2e.jpg',
     './background_pictures/拾光_周度精选_165c1f99d53d37d5.jpg',
     './background_pictures/拾光_周度精选_1c65880ded50f92e.jpg',
