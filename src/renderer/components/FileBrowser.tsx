@@ -44,10 +44,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
   setShowTransferManager,
   currentPath: terminalPath
 }) => {
-  const [browserPath, setBrowserPath] = useState('/');
-  const [inputPath, setInputPath] = useState('/');
-  const [userHasManuallyNavigated, setUserHasManuallyNavigated] = useState(false);
-  const [lastTerminalPath, setLastTerminalPath] = useState<string | undefined>(undefined);
+  const [browserPath, setBrowserPath] = useState<string>('/');
+  const [inputPath, setInputPath] = useState<string>('/');
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,27 +89,21 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
     }
   }, [sessionId]);
 
+  // 初始化加载
   useEffect(() => {
-    loadDirectory('/');
-  }, [loadDirectory]);
+    const initialPath = terminalPath || '/';
+    loadDirectory(initialPath);
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 核心同步逻辑：terminal 变化 → 文件浏览器跟随
   useEffect(() => {
     if (terminalPath) {
-      if (terminalPath !== lastTerminalPath) {
-        setUserHasManuallyNavigated(false);
-        setLastTerminalPath(terminalPath);
-        if (terminalPath !== browserPath) {
-          loadDirectory(terminalPath);
-        }
-      } else if (!userHasManuallyNavigated && terminalPath !== browserPath) {
-        loadDirectory(terminalPath);
-      }
+      loadDirectory(terminalPath);
     }
-  }, [terminalPath, browserPath, userHasManuallyNavigated, lastTerminalPath, loadDirectory]);
+  }, [terminalPath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDirectoryClick = (file: FileItem) => {
     if (file.type === 'directory') {
-      setUserHasManuallyNavigated(true);
       const newPath = browserPath === '/' ? `/${file.name}` : `${browserPath}/${file.name}`;
       loadDirectory(newPath);
     }
@@ -119,14 +111,12 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
 
   const goBack = () => {
     if (browserPath === '/') return;
-    setUserHasManuallyNavigated(true);
     const parentPath = browserPath.substring(0, browserPath.lastIndexOf('/')) || '/';
     loadDirectory(parentPath);
   };
 
   const handlePathInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      setUserHasManuallyNavigated(true);
       loadDirectory(inputPath);
     }
   };

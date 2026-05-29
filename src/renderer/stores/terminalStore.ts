@@ -71,14 +71,11 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
     )
   })),
 
-  updateSessionPath: (id, path) => set((state) => {
-    console.log('[terminalStore] updateSessionPath:', id, path);
-    return {
-      sessions: state.sessions.map(s =>
-        s.id === id ? { ...s, currentPath: path } : s
-      )
-    };
-  }),
+  updateSessionPath: (id, path) => set((state) => ({
+    sessions: state.sessions.map(s =>
+      s.id === id ? { ...s, currentPath: path } : s
+    )
+  })),
 
   reorderSessions: (fromIndex, toIndex) => set((state) => {
     const newSessions = [...state.sessions];

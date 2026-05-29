@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ipcRenderer } from 'electron';
 import Logo from './Logo';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -53,6 +53,11 @@ const Header: React.FC = () => {
     ipcRenderer.send('window-close');
   };
 
+  const handleBackgroundButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowBackgroundSelector(!showBackgroundSelector);
+  };
+
   return (
     <div style={headerStyle}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -65,7 +70,7 @@ const Header: React.FC = () => {
         
         <div style={{ position: 'relative' }}>
           <button
-            onClick={() => setShowBackgroundSelector(!showBackgroundSelector)}
+            onClick={handleBackgroundButtonClick}
             style={{
               padding: '6px 12px',
               backgroundColor: 'var(--bg-tertiary)',

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, screen, clipboard, dialog } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, screen, clipboard, dialog, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -46,7 +46,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      devTools: !app.isPackaged,
+      devTools: false,
       backgroundThrottling: false
     }
   });
@@ -393,6 +393,22 @@ async function connectWithRetry(sessionId: string, config: any, attempt: number 
             mainWindow.webContents.send(`ssh-close-${sessionId}`);
           }
         });
+
+        // 设置 PS1 + PROMPT_COMMAND + TERM
+        // PROMPT_COMMAND 输出 OSC 777 序列携带 $PWD，用于文件浏览器同步
+        // TERM=xterm-256color 确保正确的颜色支持
+        setTimeout(() => {
+          try {
+            stream.write(
+              "export TERM=xterm-256color ; " +
+              "export PS1='\\[\\033[01;32m\\]\\u@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '" +
+              "; PROMPT_COMMAND='printf \"\\\\033]777;CWD;%s\\\\033\\\\\\\\\" \"$PWD\"'" +
+              " && printf '\\033[1A\\033[2K'\n"
+            );
+          } catch (e) {
+            // 流可能已关闭
+          }
+        }, 800);
       });
     });
 
@@ -700,43 +716,71 @@ ipcMain.on('ssh-disconnect', (_event, { sessionId }) => {
 
 ipcMain.handle('ssh-get-cwd', async (_event, { sessionId }) => {
   const session = sshSessions.get(sessionId);
-  if (!session) {
+  if (!session || !session.stream) {
     return { success: false, error: 'Session not found' };
   }
 
   return new Promise((resolve) => {
-    session.client.exec('pwd', (err: any, channel: any) => {
-      if (err) {
-        resolve({ success: false, error: err.message });
-        return;
+    const marker = `CWD${Date.now().toString(36)}`;
+    // stty -echo 关闭回显 → printf 清除 "stty -echo" 行 →
+    // echo 输出 CWD → printf 清除 CWD 输出行 → stty echo 恢复
+    const cmd =
+      `printf '\\033[1A\\033[2K' && ` +
+      `echo "${marker}$PWD" && ` +
+      `printf '\\033[1A\\033[2K' && ` +
+      `stty echo\n`;
+
+    let resolved = false;
+
+    const dataHandler = (data: Buffer) => {
+      if (resolved) return;
+      const text = data.toString();
+      const idx = text.indexOf(marker);
+      if (idx === -1) return;
+
+      // stty -echo 已抑制命令回显，这里直接是 echo 的实际输出
+      resolved = true;
+      session.stream.removeListener('data', dataHandler);
+
+      const pathMatch = text.substring(idx + marker.length).match(/^([^\r\n\x1b]*)/);
+      let cwd = pathMatch ? pathMatch[1].trim() : '/';
+      if (!cwd.startsWith('/')) cwd = '/' + cwd;
+      resolve({ success: true, path: cwd });
+    };
+
+    session.stream.on('data', dataHandler);
+
+    // Step 1: 关闭回显（仅 "stty -echo" 11 字符可见，绝不换行）
+    session.stream.write('stty -echo\n');
+    setTimeout(() => {
+      if (!resolved) {
+        session.stream.write(cmd);
       }
+    }, 200);
 
-      let output = '';
-      channel.on('data', (data: Buffer) => {
-        output += data.toString();
-      });
-
-      channel.stderr.on('data', (data: Buffer) => {
-        console.error('pwd stderr:', data.toString());
-      });
-
-      channel.on('close', () => {
-        let cwd = output
-          .replace(/\x1b\[[0-9;]*m/g, '')
-          .replace(/[\r\n]+/g, '\n')
-          .trim();
-
-        if (!cwd.startsWith('/')) {
-          cwd = '/' + cwd;
-        }
-
-        resolve({ success: true, path: cwd });
-      });
-    });
+    // 3 秒超时
+    setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        session.stream.removeListener('data', dataHandler);
+        resolve({ success: false, error: 'CWD query timed out' });
+      }
+    }, 3000);
   });
 });
 
 // Clipboard API for renderer process
 ipcMain.handle('get-clipboard-text', () => {
   return clipboard.readText();
+});
+
+// Open URL in default browser
+ipcMain.on('open-url', (_event, url: string) => {
+  try {
+    // Validate URL before opening
+    new URL(url);
+    shell.openExternal(url);
+  } catch (error) {
+    console.error('Failed to open URL:', error);
+  }
 });

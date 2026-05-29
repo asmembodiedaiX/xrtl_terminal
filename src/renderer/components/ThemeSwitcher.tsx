@@ -5,6 +5,7 @@ const ThemeSwitcher: React.FC = () => {
   const { currentTheme, themeName, setTheme, themes } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -22,6 +23,11 @@ const ThemeSwitcher: React.FC = () => {
     };
   }, [isOpen]);
 
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+
   const handleThemeSelect = (name: string) => {
     setTheme(name);
     setIsOpen(false);
@@ -30,7 +36,8 @@ const ThemeSwitcher: React.FC = () => {
   return (
     <div ref={dropdownRef} style={{ position: 'relative', zIndex: 100 }}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={handleButtonClick}
         style={{
           display: 'flex',
           alignItems: 'center',

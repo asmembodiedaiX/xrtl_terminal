@@ -7,7 +7,7 @@ interface BackgroundSelectorProps {
 
 const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
   const { updateBackground } = useTheme();
-  const [currentBackground, setCurrentBackground] = useState<string>('/default.png');
+  const [currentBackground, setCurrentBackground] = useState<string>('./default.png');
   const [backgrounds, setBackgrounds] = useState<string[]>([
     './background_pictures/FragPunk游戏海报3840_2160.jpg',
     './background_pictures/拾光_中转站_685a0dd18fb6a08a.jpg',
@@ -37,6 +37,21 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
     './background_pictures/由内而外2字符海报超宽m.jpg'
   ]);
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
 
   useEffect(() => {
     const saved = localStorage.getItem('app-background');
@@ -95,7 +110,7 @@ const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
   };
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       position: 'absolute',
       top: '100%',
       right: 0,

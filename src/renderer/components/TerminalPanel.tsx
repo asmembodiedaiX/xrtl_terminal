@@ -8,17 +8,21 @@ import { useTerminalStore, TerminalSession } from '../stores/terminalStore';
 import FileBrowser from './FileBrowser';
 import FileTransferManager from './FileTransferManager';
 import { useTheme } from '../styles/ThemeContext';
+import TerminalHighlighter from './TerminalHighlighter';
 
 const TerminalPanel: React.FC = () => {
   const { sessions, activeSessionId, removeSession, setActiveSession, updateSessionStatus, updateSessionPath, reorderSessions } = useTerminalStore();
   const { currentTheme } = useTheme();
   const terminalContainersRef = useRef<Map<string, HTMLDivElement>>(new Map());
-  const terminalInstancesRef = useRef<Map<string, { terminal: Terminal; fitAddon: FitAddon }>>(new Map());
+  const terminalInstancesRef = useRef<Map<string, { 
+    terminal: Terminal; 
+    fitAddon: FitAddon;
+    highlighter?: TerminalHighlighter;
+  }>>(new Map());
   const lastKnownPathRef = useRef<Map<string, string>>(new Map());
   const enterPressCountRef = useRef<Map<string, number>>(new Map());
   const enterPressTimerRef = useRef<Map<string, number>>(new Map());
   const sessionsRef = useRef(sessions);
-  
   // 拖拽排序相关状态
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -113,7 +117,15 @@ const TerminalPanel: React.FC = () => {
 
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
-    terminal.loadAddon(new WebLinksAddon());
+    
+    // Web links addon with custom handler
+    terminal.loadAddon(new WebLinksAddon((_event, uri) => {
+      ipcRenderer.send('open-url', uri);
+    }));
+
+    // 创建并初始化高亮器
+    const highlighter = new TerminalHighlighter(terminal);
+    highlighter.injectStyles();
 
     terminal.open(container);
     fitAddon.fit();
@@ -130,7 +142,7 @@ const TerminalPanel: React.FC = () => {
       fitAddon.fit();
     });
 
-    terminalInstancesRef.current.set(session.id, { terminal, fitAddon });
+    terminalInstancesRef.current.set(session.id, { terminal, fitAddon, highlighter });
 
     // Handle terminal input (sending data to remote server)
     terminal.onData((data: string) => {
@@ -138,19 +150,19 @@ const TerminalPanel: React.FC = () => {
       // Use sessionsRef to get the latest state, not the closure-captured sessions
       const currentSession = sessionsRef.current.find(s => s.id === session.id);
       const currentStatus = currentSession?.status;
-      
+
       if (currentStatus === 'disconnected' && (data.includes('\r') || data.includes('\n'))) {
         // Handle double Enter press for reconnect
         const currentCount = enterPressCountRef.current.get(session.id) || 0;
         const newCount = currentCount + 1;
         enterPressCountRef.current.set(session.id, newCount);
-        
+
         // Clear previous timer if exists
         const existingTimer = enterPressTimerRef.current.get(session.id);
         if (existingTimer) {
           clearTimeout(existingTimer);
         }
-        
+
         if (newCount >= 2) {
           // Double Enter pressed - reconnect
           enterPressCountRef.current.set(session.id, 0);
@@ -168,27 +180,11 @@ const TerminalPanel: React.FC = () => {
         }
         return;
       }
-      
+
       ipcRenderer.send('ssh-send-data', { sessionId: session.id, data });
-      
-      // 当用户按 Enter 键时，获取当前工作目录
-      if (data.includes('\r') || data.includes('\n')) {
-        setTimeout(async () => {
-          try {
-            const result = await ipcRenderer.invoke('ssh-get-cwd', { sessionId: session.id });
-            if (result.success) {
-              const lastPath = lastKnownPathRef.current.get(session.id);
-              // 只有当路径真正改变时才更新
-              if (lastPath !== result.path) {
-                lastKnownPathRef.current.set(session.id, result.path);
-                updateSessionPath(session.id, result.path);
-              }
-            }
-          } catch (err) {
-            console.error('Failed to get cwd:', err);
-          }
-        }, 500);
-      }
+
+      // CWD 追踪由 PROMPT_COMMAND → OSC 777 序列自动完成
+      // 覆盖所有场景：键入 / Tab 补全 / 粘贴 / history
     });
 
     // Handle terminal resize (RAF 节流，避免最大化/最小化时频繁重绘导致闪烁)
@@ -277,8 +273,23 @@ const TerminalPanel: React.FC = () => {
       ipcRenderer.removeAllListeners(`ssh-close-${session.id}`);
 
       // Setup data listener FIRST before connecting
+      // 在写入终端前解析 PROMPT_COMMAND 输出的 OSC 777 CWD 序列
       ipcRenderer.on(`ssh-data-${session.id}`, (_event, data: string) => {
-        terminal.write(data);
+        const cleanData = data.replace(
+          /\x1b\]777;CWD;([^\x07\x1b]*)(?:\x07|\x1b\\)/g,
+          (_match: string, cwd: string) => {
+            const trimmed = cwd.trim();
+            if (trimmed.startsWith('/')) {
+              const lastPath = lastKnownPathRef.current.get(session.id);
+              if (lastPath !== trimmed) {
+                lastKnownPathRef.current.set(session.id, trimmed);
+                updateSessionPath(session.id, trimmed);
+              }
+            }
+            return ''; // 从终端输出中移除，用户不可见
+          }
+        );
+        terminal.write(cleanData);
       });
 
       // Setup close listener FIRST before connecting
@@ -313,18 +324,7 @@ const TerminalPanel: React.FC = () => {
       setTimeout(sendResize, 200);
       setTimeout(sendResize, 500);
 
-      // 连接成功后立即获取一次当前目录
-      setTimeout(async () => {
-        try {
-          const result = await ipcRenderer.invoke('ssh-get-cwd', { sessionId: session.id });
-          if (result.success) {
-            lastKnownPathRef.current.set(session.id, result.path);
-            updateSessionPath(session.id, result.path);
-          }
-        } catch (err) {
-          console.error('Failed to get initial cwd:', err);
-        }
-      }, 1000);
+      // 初始 CWD 由 PROMPT_COMMAND → OSC 777 首次触发时自动获取，无需手动查询
     } catch (error: any) {
       updateSessionStatus(session.id, 'disconnected');
       terminal.write(`\r\n[Connection failed: ${error.message}]\r\n`);
@@ -348,6 +348,9 @@ const TerminalPanel: React.FC = () => {
     const terminalInstance = terminalInstancesRef.current.get(id);
     if (terminalInstance) {
       terminalInstance.terminal.dispose();
+      if (terminalInstance.highlighter) {
+        terminalInstance.highlighter.dispose();
+      }
     }
     
     terminalInstancesRef.current.delete(id);
