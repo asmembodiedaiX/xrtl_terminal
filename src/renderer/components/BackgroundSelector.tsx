@@ -7,18 +7,30 @@ interface BackgroundSelectorProps {
 
 const BackgroundSelector: React.FC<BackgroundSelectorProps> = ({ onClose }) => {
   const { updateBackground } = useTheme();
-  const [currentBackground, setCurrentBackground] = useState<string>('./default.jpg');
+  const [currentBackground, setCurrentBackground] = useState<string>('/default.png');
   const [backgrounds, setBackgrounds] = useState<string[]>([
+    './background_pictures/FragPunk游戏海报3840_2160.jpg',
     './background_pictures/拾光_周度精选_0f31d889bd773c2e.jpg',
-    './background_pictures/拾光_周度精选_4768f506b8331305.jpg',
-    './background_pictures/拾光_周度精选_62b1522c475ac8fc.jpg',
-    './background_pictures/拾光_周度精选_ab50601615cbad2b.jpg',
-    './background_pictures/珍妮K-pop3840_2160.jpg',
-    './background_pictures/由内而外2字符海报超宽m.jpg',
-    './background_pictures/黑粉色K-Pop+3840_2160.jpg',
+    './background_pictures/拾光_周度精选_165c1f99d53d37d5.jpg',
     './background_pictures/拾光_周度精选_1c65880ded50f92e.jpg',
+    './background_pictures/拾光_周度精选_2190e97d1adc6259.jpg',
+    './background_pictures/拾光_周度精选_32be392dd7964f94.jpg',
     './background_pictures/拾光_周度精选_371351206c419e50.jpg',
+    './background_pictures/拾光_周度精选_4768f506b8331305.jpg',
+    './background_pictures/拾光_周度精选_59a4c624eee8318a.jpg',
+    './background_pictures/拾光_周度精选_62b1522c475ac8fc.jpg',
+    './background_pictures/拾光_周度精选_84d955e3913f1a3e.jpg',
+    './background_pictures/拾光_周度精选_ab50601615cbad2b.jpg',
+    './background_pictures/拾光_周度精选_d45dd55bed75f892.jpg',
     './background_pictures/拾光_周度精选_e2189124fdd8f467.jpg',
+    './background_pictures/拾光_周度精选_e5b75945c042bfb1.jpg',
+    './background_pictures/拾光_周度精选_f6c40597f933a2d6.jpg',
+    './background_pictures/拾光_周度精选_fe85a21ba86081db.jpg',
+    './background_pictures/拾光_壁纸汇_e16f6202eb5bd42f.jpg',   
+    './background_pictures/拾光_彼岸图网_6b17e2152a7fe9f2.jpg',
+    './background_pictures/拾光_轻壁纸_b506c02718d4b29b.jpg',
+    './background_pictures/拾光_轻壁纸_f87de1fd3d3c7a01.jpg',
+    './background_pictures/由内而外2字符海报超宽m.jpg'
   ]);
   const styleRef = useRef<HTMLStyleElement | null>(null);
 

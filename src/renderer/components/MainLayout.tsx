@@ -70,24 +70,48 @@ const MainLayout: React.FC = () => {
       overflow: 'hidden',
       position: 'relative'
     }}>
-      {/* Background image layer */}
+      {/* Background image layers with crossfade */}
       {bgImageEnabled && (
-        <div 
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'var(--bg-image)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            filter: 'blur(var(--bg-blur)) brightness(var(--bg-brightness))',
-            opacity: 'var(--bg-opacity)',
-            zIndex: 0
-          }}
-        />
+        <>
+          {/* Old background — fades out during transition */}
+          <div
+            className="bg-layer-old"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundImage: 'var(--bg-image-old)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'blur(var(--bg-blur-old)) brightness(var(--bg-brightness-old))',
+              opacity: 'var(--bg-opacity-old)',
+              zIndex: 0,
+              transition: 'opacity var(--bg-fade-duration, 0.5s) ease-in-out'
+            }}
+          />
+          {/* New background — fades in */}
+          <div
+            className="bg-layer-new"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundImage: 'var(--bg-image)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'blur(var(--bg-blur)) brightness(var(--bg-brightness))',
+              opacity: 'var(--bg-opacity)',
+              zIndex: 0,
+              transition: 'opacity var(--bg-fade-duration, 0.5s) ease-in-out'
+            }}
+          />
+        </>
       )}
       {/* Content layer */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>

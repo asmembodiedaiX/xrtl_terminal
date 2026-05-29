@@ -118,6 +118,18 @@ const TerminalPanel: React.FC = () => {
     terminal.open(container);
     fitAddon.fit();
 
+    // Re-measure characters after custom fonts finish loading.
+    // xterm measures chars on open(), but @font-face fonts may not be
+    // loaded yet — causing the character grid to mismatch the visual
+    // rendering, which makes text selection misalign by a few chars.
+    document.fonts.ready.then(() => {
+      if (!terminalInstancesRef.current.has(session.id)) return;
+      const fs = terminal.options.fontSize ?? fontSize;
+      terminal.options.fontSize = fs - 1;
+      terminal.options.fontSize = fs;
+      fitAddon.fit();
+    });
+
     terminalInstancesRef.current.set(session.id, { terminal, fitAddon });
 
     // Handle terminal input (sending data to remote server)
@@ -214,14 +226,20 @@ const TerminalPanel: React.FC = () => {
 
     container.addEventListener('wheel', handleWheel, { passive: false });
 
-    // Handle text selection - auto copy when selection changes
+    // Handle text selection - auto copy with debounce to avoid losing end characters
+    let selectionTimer: ReturnType<typeof setTimeout> | null = null;
     terminal.onSelectionChange(() => {
-      const selection = terminal.getSelection();
-      if (selection && selection.trim()) {
-        navigator.clipboard.writeText(selection.trim()).catch(err => {
-          console.error('Failed to copy to clipboard:', err);
-        });
-      }
+      if (selectionTimer) clearTimeout(selectionTimer);
+      selectionTimer = setTimeout(() => {
+        if (!terminalInstancesRef.current.has(session.id)) return;
+        const selection = terminal.getSelection();
+        if (selection) {
+          navigator.clipboard.writeText(selection).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+          });
+        }
+        selectionTimer = null;
+      }, 80);
     });
 
     // Handle right-click paste

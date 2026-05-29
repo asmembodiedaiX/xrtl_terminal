@@ -14,6 +14,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [themeName, setThemeName] = useState<string>('dark');
   const [customBackground, setCustomBackground] = useState<Theme['background'] | null>(null);
+  const [oldBackground, setOldBackground] = useState<Theme['background'] | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     document.documentElement.style.setProperty('--terminal-bright-cyan', theme.colors.terminalBrightCyan);
     document.documentElement.style.setProperty('--terminal-bright-white', theme.colors.terminalBrightWhite);
     
-    // Background image settings
+    // Background image settings — new layer
     if (background?.image) {
       document.documentElement.style.setProperty('--bg-image', `url(${background.image})`);
       document.documentElement.style.setProperty('--bg-blur', background.blur ? `${background.blur}px` : '0px');
@@ -70,7 +71,59 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } else {
       document.documentElement.style.setProperty('--bg-image-enabled', 'false');
     }
-  }, [themeName, customBackground, isInitialized]);
+
+    // Old background layer for crossfade
+    if (oldBackground?.image) {
+      document.documentElement.style.setProperty('--bg-image-old', `url(${oldBackground.image})`);
+      document.documentElement.style.setProperty('--bg-blur-old', oldBackground.blur ? `${oldBackground.blur}px` : '0px');
+      document.documentElement.style.setProperty('--bg-opacity-old', oldBackground.opacity ? `${oldBackground.opacity}` : '0.5');
+      document.documentElement.style.setProperty('--bg-brightness-old', oldBackground.brightness ? `${oldBackground.brightness}` : '1');
+    }
+  }, [themeName, customBackground, oldBackground, isInitialized]);
+
+  // Crossfade transition effect — uses two rAFs to control paint frames
+  useEffect(() => {
+    if (!oldBackground?.image || !customBackground?.image) return;
+
+    const root = document.documentElement;
+    const targetOpacity = customBackground.opacity ?? 0.5;
+    const oldOpacity = oldBackground.opacity ?? 0.5;
+    let cancelled = false;
+    let storedRaf2: number | undefined;
+    let storedTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // Step 1: freeze transitions, jump new layer to invisible, old layer to visible
+    root.style.setProperty('--bg-fade-duration', '0s');
+    root.style.setProperty('--bg-opacity', '0');
+    root.style.setProperty('--bg-opacity-old', String(oldOpacity));
+
+    // Step 2: after effects settle, schedule the crossfade across two paint frames
+    const raf1 = requestAnimationFrame(() => {
+      storedRaf2 = requestAnimationFrame(() => {
+        if (cancelled) return;
+        root.style.setProperty('--bg-fade-duration', '0.5s');
+        root.style.setProperty('--bg-opacity', String(targetOpacity));
+        root.style.setProperty('--bg-opacity-old', '0');
+      });
+
+      storedTimer = setTimeout(() => {
+        if (cancelled) return;
+        setOldBackground(null);
+        root.style.removeProperty('--bg-image-old');
+        root.style.removeProperty('--bg-blur-old');
+        root.style.removeProperty('--bg-opacity-old');
+        root.style.removeProperty('--bg-brightness-old');
+        root.style.removeProperty('--bg-fade-duration');
+      }, 550);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf1);
+      if (storedRaf2 !== undefined) cancelAnimationFrame(storedRaf2);
+      if (storedTimer !== undefined) clearTimeout(storedTimer);
+    };
+  }, [oldBackground, customBackground]);
 
   const setTheme = (name: string) => {
     if (themes[name]) {
@@ -80,6 +133,9 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const updateBackground = (background: Theme['background']) => {
+    if (customBackground?.image && background?.image && customBackground.image !== background.image) {
+      setOldBackground({ ...customBackground });
+    }
     setCustomBackground(background);
     if (background) {
       localStorage.setItem('app-background', JSON.stringify(background));
