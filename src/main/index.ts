@@ -1,9 +1,20 @@
 import { app, BrowserWindow, Menu, ipcMain, screen, clipboard, dialog } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // 必须在所有 Electron 代码之前设置，否则 Windows 任务栏显示 "Electron"
 app.setName('XRTL Terminal');
 app.setAppUserModelId('com.xrtl.terminal');
+
+const cacheDir = path.join(app.getPath('userData'), 'Cache');
+try {
+  if (!fs.existsSync(cacheDir)) {
+    fs.mkdirSync(cacheDir, { recursive: true });
+  }
+  app.setPath('cache', cacheDir);
+} catch (err) {
+  console.error('Failed to set cache directory:', err);
+}
 
 let mainWindow: BrowserWindow | null = null;
 const sshSessions: Map<string, { client: any; stream: any; sftp?: any }> = new Map();
@@ -152,6 +163,10 @@ app.commandLine.appendSwitch('disable-windows10-custom-titlebar');
 // 启用平滑滚动和动画
 app.commandLine.appendSwitch('enable-smooth-scrolling');
 app.commandLine.appendSwitch('enable-experimental-web-platform-features');
+
+// 禁用 GPU 磁盘缓存以解决访问被拒绝错误
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('disable-gpu-cache');
 
 app.whenReady().then(() => {
   createWindow();
