@@ -102,7 +102,7 @@ function createWindow() {
   let rendererPath: string;
 
   if (!isPackaged) {
-    rendererPath = 'http://localhost:3100';
+    rendererPath = 'http://localhost:3200';
   } else {
     rendererPath = path.join(__dirname, '..', 'renderer', 'index.html');
   }

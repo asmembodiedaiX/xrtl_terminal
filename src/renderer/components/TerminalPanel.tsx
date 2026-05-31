@@ -244,9 +244,32 @@ const TerminalPanel: React.FC = () => {
       // Use Electron's clipboard API for better multi-line support
       ipcRenderer.invoke('get-clipboard-text').then((text: string) => {
         if (text && text.trim()) {
-          // Convert Windows line endings to Unix line endings
-          const normalizedText = text.replace(/\r\n/g, '\n');
-          ipcRenderer.send('ssh-send-data', { sessionId: session.id, data: normalizedText });
+          // Normalize all line endings (Windows \r\n → \n, legacy Mac \r → \n)
+          const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+          // Wrap with bracketed paste mode escape sequences.
+          // \x1b[200~ tells vim (and other paste-aware apps) that a paste is starting,
+          // so they disable auto-indent, comment continuation, etc.
+          // \x1b[201~ marks the end of the paste.
+          const pasteData = '\x1b[200~' + normalizedText + '\x1b[201~';
+
+          // For large pastes, send in chunks to avoid overflowing the remote PTY buffer
+          const MAX_CHUNK_SIZE = 4096;
+          if (pasteData.length <= MAX_CHUNK_SIZE) {
+            ipcRenderer.send('ssh-send-data', { sessionId: session.id, data: pasteData });
+          } else {
+            // Send chunks with a small pacing delay to avoid data loss
+            let offset = 0;
+            const sendNextChunk = () => {
+              if (offset >= pasteData.length) return;
+              const chunk = pasteData.substring(offset, offset + MAX_CHUNK_SIZE);
+              offset += MAX_CHUNK_SIZE;
+              ipcRenderer.send('ssh-send-data', { sessionId: session.id, data: chunk });
+              if (offset < pasteData.length) {
+                setTimeout(sendNextChunk, 10);
+              }
+            };
+            sendNextChunk();
+          }
         }
       }).catch(err => {
         console.error('Failed to read from clipboard:', err);
